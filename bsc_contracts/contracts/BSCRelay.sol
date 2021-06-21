@@ -3,6 +3,7 @@ pragma experimental ABIEncoderV2; //returning struct is not fully supported. I n
 
 import "hardhat/console.sol";
 import "./RLPReader.sol";
+import "./ECDSA.sol";
 
 contract BSCRelay {
 
@@ -45,13 +46,10 @@ contract BSCRelay {
         uint nonce;
     }
 
-    uint64 maxForkId = 0;                           // current fork-id, is incrementing
-    bytes32 longestChainEndpoint;                   // saves the hash of the block with the highest blockNr. (most PoW work)
     bytes32 genesisBlockHash;                       // saves the hash of the genesis block the contract was deployed with
     // maybe the saving of the genesis block could also be achieved with events in the
     // constructor that gives very small savings
     mapping (bytes32 => Header) private headers;    // holds all block in a hashmap, key=blockhash, value=reduced block headers with metadata
-    bytes32[] iterableEndpoints;                    // holds endpoints of all forks of the PoW-tree to speed up submission, deletion etc.
 
     // initial VS, initial height, no ful block as we have now
     // I have to pass the parameters to the test when I deploy it
@@ -95,46 +93,36 @@ contract BSCRelay {
         return fullHeader;
     }
 
-    function getValidatorSet(bytes memory extraData) external {
-        int signBytes = 65;
-        bytes memory signature = new bytes(signBytes);
-        uint extraDataLength = extraData.length;
-        console.log(extraDataLength);
-        // the structure of extraData for an epoch block is:
-        // 32 bytes of extraVanity + N*{20 bytes of validator address} + 65 bytes of signature
-        uint jj = 0;
-        for (uint ii = 452; ii < extraDataLength; ii++) {
-            signature[jj] = extraData[ii];
-            jj = jj+1;
+    function getValidatorSet(bytes calldata extraData) external view returns(bytes[] memory){
+        uint start = 32;
+        bytes[] memory validatorSet = new bytes[](21);
+        for (uint ii = 0; ii < 21; ii++){
+            validatorSet[ii] = bytes(extraData[start:(start+20)]);
+            start += 20;
+            //console.logBytes(validatorSet[ii]);
         }
 
-        return signature;
-
+        return validatorSet;
     }
 
-    function getValidatorSignature(bytes memory extraData) external view returns (bytes memory) {
-        uint signBytes = 65;
-        bytes memory signature = new bytes(signBytes);
-        uint extraDataLength = extraData.length;
-        console.log(extraDataLength);
-        // the structure of extraData for an epoch block is:
-        // 32 bytes of extraVanity + N*{20 bytes of validator address} + 65 bytes of signature
-        // for this reason, the signature starts from byte n. 452
-        uint jj = 0;
-        for (uint ii = 452; ii < extraDataLength; ii++) {
-            signature[jj] = extraData[ii];
-            jj = jj+1;
-        }
-
-        //console.logBytes(signature);
-        return signature;
-
+    function getValidatorSignature(bytes calldata extraData) external view returns (bytes memory) {
+        return bytes(extraData[452:]);
     }
 
-    /*function verifyValidatorSignature(bytes memory extraData) external {
-        address signerAddress = ecrecover(bytes32 hash, uint8 v, bytes32 r, bytes32 s) returns (address);
+    function verifyValidatorSignature(bytes memory rlpHeader, bytes memory signature) external returns(address){
+        bytes32 hashRLPHeader = keccak256(rlpHeader);
+        console.log("----");
+        console.logBytes32(hashRLPHeader);
+        console.logAddress(ECDSA.recover(hashRLPHeader, signature));
+        console.log("----");
+        hashRLPHeader = ECDSA.toEthSignedMessageHash(hashRLPHeader);
+        console.logBytes32(hashRLPHeader);
+        console.logAddress(ECDSA.recover(hashRLPHeader, signature));
 
-    }*/
+        //address signerAddress = ecrecover(bytes32 hashRLPHeader, uint8 v, bytes32 r, bytes32 s) returns (address);
+        console.log("----");
+        return ECDSA.recover(hashRLPHeader, signature);
+    }
 
     function parseRlpEncodedHeader(bytes memory rlpHeader) private pure returns (FullHeader memory) {
         FullHeader memory header;

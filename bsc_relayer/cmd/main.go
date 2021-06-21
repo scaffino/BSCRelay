@@ -28,8 +28,8 @@ func main() {
 		panic(err)
 	}
 
-	fmt.Println(string(headerJSON))
-	fmt.Println(common.Bytes2Hex(headerRLP))
+	fmt.Println("JSON header -----> " + string(headerJSON))
+	fmt.Println("RLP header -----> 0x" + common.Bytes2Hex(headerRLP))
 }
 
 

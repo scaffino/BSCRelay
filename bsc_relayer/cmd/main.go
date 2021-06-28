@@ -23,13 +23,13 @@ func main() {
 		panic(err)
 	}
 
-	headerRLP, err := utils.EncodeHeaderToRLP(header)
+	headerRLP, err := utils.EncodeHeaderToRLP(header, big.NewInt(56))
 	if err != nil{
 		panic(err)
 	}
 
 	fmt.Println("JSON header -----> " + string(headerJSON))
-	fmt.Println("RLP header -----> 0x" + common.Bytes2Hex(headerRLP))
+	fmt.Println("RLP header -----> " + common.Bytes2Hex(headerRLP))
 }
 
 

@@ -4,6 +4,7 @@ pragma experimental ABIEncoderV2; //returning struct is not fully supported. I n
 import "hardhat/console.sol";
 import "./RLPReader.sol";
 import "./ECDSA.sol";
+import "./ECVerify.sol";
 
 contract BSCRelay {
 
@@ -109,20 +110,25 @@ contract BSCRelay {
         return bytes(extraData[452:]);
     }
 
+    //function verifyValidatorSignature(bytes memory rlpHeader, bytes memory signature) external returns(address){
+    function verifyValidatorSignature(bytes memory rlpHeader, bytes memory signature) external returns(address){
+        bytes32 hashRLPHeader = keccak256(rlpHeader);
+        console.logAddress(ECDSA.recover(hashRLPHeader, signature));
+
+        return ECDSA.recover(hashRLPHeader, signature);
+    }
+
+    /*function verifyValidatorSignature_alternative(bytes memory rlpHeader, bytes memory signature) external returns(address){
     function verifyValidatorSignature(bytes memory rlpHeader, bytes memory signature) external returns(address){
         bytes32 hashRLPHeader = keccak256(rlpHeader);
         console.log("----");
         console.logBytes32(hashRLPHeader);
-        console.logAddress(ECDSA.recover(hashRLPHeader, signature));
-        console.log("----");
-        hashRLPHeader = ECDSA.toEthSignedMessageHash(hashRLPHeader);
-        console.logBytes32(hashRLPHeader);
-        console.logAddress(ECDSA.recover(hashRLPHeader, signature));
+        console.logAddress(ECVerify.ecrecovery(hashRLPHeader, signature));
+        console.logAddress(ECVerify.ecrecovery(hashRLPHeader, signature));
 
-        //address signerAddress = ecrecover(bytes32 hashRLPHeader, uint8 v, bytes32 r, bytes32 s) returns (address);
-        console.log("----");
-        return ECDSA.recover(hashRLPHeader, signature);
-    }
+        address validatorAddress = ECVerify.ecrecovery(hashRLPHeader, signature);
+        return validatorAddress;
+    }*/
 
     function parseRlpEncodedHeader(bytes memory rlpHeader) private pure returns (FullHeader memory) {
         FullHeader memory header;

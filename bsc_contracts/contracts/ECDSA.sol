@@ -8,7 +8,7 @@ import "hardhat/console.sol";
  * @dev Elliptic Curve Digital Signature Algorithm (ECDSA) operations.
  *
  * These functions can be used to verify that a message was signed by the holder
- * of the private keys of a given address.
+ * of the private keys of a given returnaddress.
  */
 library ECDSA {
     /**
@@ -48,7 +48,6 @@ library ECDSA {
                 v += 27;
             }
 
-            console.log(v);
             return recover(hash, v, r, s);
         } else if (signature.length == 64) {
             bytes32 r;
@@ -84,7 +83,6 @@ library ECDSA {
             v := add(shr(255, vs), 27)
 
         }
-        console.log("test");
         return recover(hash, v, r, s);
     }
 
@@ -106,6 +104,7 @@ library ECDSA {
         // with 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141 - s1 and flip v from 27 to 28 or
         // vice versa. If your library also generates signatures with 0/1 for v instead 27/28, add 27 to v to accept
         // these malleable signatures as well.
+
         require(
             uint256(s) <= 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0,
             "ECDSA: invalid signature 's' value"

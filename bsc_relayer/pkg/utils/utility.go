@@ -6,12 +6,14 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/rlp"
+	"math/big"
 )
 
-func EncodeHeaderToRLP(header *types.Header) ([]byte, error) {
+func EncodeHeaderToRLP(header *types.Header, chainId *big.Int) ([]byte, error) {
 	buffer := new(bytes.Buffer)
 
 	err := rlp.Encode(buffer, []interface{}{
+		chainId,
 		header.ParentHash,
 		header.UncleHash,
 		header.Coinbase,
@@ -24,8 +26,7 @@ func EncodeHeaderToRLP(header *types.Header) ([]byte, error) {
 		header.GasLimit,
 		header.GasUsed,
 		header.Time,
-		//header.Extra[:452],
-		append(header.Extra[:452], make([]byte, 65, 65)...),
+		header.Extra[:452],
 		header.MixDigest,
 		header.Nonce,
 	})
@@ -35,3 +36,5 @@ func EncodeHeaderToRLP(header *types.Header) ([]byte, error) {
 	// be careful when passing byte-array as buffer, the pointer can change if the buffer is used again
 	return buffer.Bytes(), err
 }
+
+

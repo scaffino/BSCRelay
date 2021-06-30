@@ -37,7 +37,7 @@ func main() {
 		fmt.Println("RLP header -----> " + common.Bytes2Hex(headerRLP))
 
 	} else {
-		headerRLP, err := utils.EncodeHeaderToRLP_noEpochBlock(header, big.NewInt(56)) //56 is mainnet
+		headerRLP, err := utils.EncodeHeaderToRLP_noEpochBlock(header, big.NewInt(56))
 		if err != nil{
 			panic(err)
 		}

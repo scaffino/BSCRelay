@@ -31,7 +31,7 @@ func EncodeHeaderToRLP_EpochBlock(header *types.Header, chainId *big.Int) ([]byt
 		header.Nonce,
 	})
 
-	fmt.Println("extra ----> " + common.Bytes2Hex(header.Extra[:452]));
+	//fmt.Println("extra ----> " + common.Bytes2Hex(header.Extra[:452]));
 	fmt.Println("sign ----> " + common.Bytes2Hex(header.Extra[452:517]));
 
 	// be careful when passing byte-array as buffer, the pointer can change if the buffer is used again

@@ -7,12 +7,16 @@ import (
 	"github.com/binance-chain/bsc-go-client/client"
 	"github.com/ethereum/go-ethereum/common"
 	"math/big"
+	"os"
+	"strconv"
 )
 
 func main() {
 
+	blockNumber, err := strconv.Atoi(os.Args[1])
+
 	var c, _ = client.Dial("wss://bsc-ws-node.nariox.org:443")
-	header,err := c.HeaderByNumber(context.Background(),big.NewInt(8375600))
+	header,err := c.HeaderByNumber(context.Background(),big.NewInt(int64(blockNumber)))
 
 	if err != nil{
 		panic(err)
@@ -23,13 +27,27 @@ func main() {
 		panic(err)
 	}
 
-	headerRLP, err := utils.EncodeHeaderToRLP(header, big.NewInt(56))
-	if err != nil{
-		panic(err)
+	if blockNumber%200 == 0 {
+		headerRLP, err := utils.EncodeHeaderToRLP_EpochBlock(header, big.NewInt(56)) //56 is mainnet
+		if err != nil{
+			panic(err)
+		}
+
+		fmt.Println("JSON header -----> " + string(headerJSON))
+		fmt.Println("RLP header -----> " + common.Bytes2Hex(headerRLP))
+
+	} else {
+		headerRLP, err := utils.EncodeHeaderToRLP_noEpochBlock(header, big.NewInt(56)) //56 is mainnet
+		if err != nil{
+			panic(err)
+		}
+
+		fmt.Println("JSON header -----> " + string(headerJSON))
+		fmt.Println("RLP header -----> " + common.Bytes2Hex(headerRLP))
 	}
 
-	fmt.Println("JSON header -----> " + string(headerJSON))
-	fmt.Println("RLP header -----> " + common.Bytes2Hex(headerRLP))
+
+
 }
 
 

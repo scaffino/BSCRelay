@@ -42,6 +42,7 @@ library ECDSA {
                 s := mload(add(signature, 0x40))
                 v := byte(0, mload(add(signature, 0x60)))
             }
+
             if (v < 27) {
                 v += 27;
             }

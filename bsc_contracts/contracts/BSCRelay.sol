@@ -113,22 +113,9 @@ contract BSCRelay {
     //function verifyValidatorSignature(bytes memory rlpHeader, bytes memory signature) external returns(address){
     function verifyValidatorSignature(bytes memory rlpHeader, bytes memory signature) external view returns(address){
         bytes32 hashRLPHeader = keccak256(rlpHeader);
-        //console.logAddress(ECDSA.recover(hashRLPHeader, signature));
 
         return ECDSA.recover(hashRLPHeader, signature);
     }
-
-    /*function verifyValidatorSignature_alternative(bytes memory rlpHeader, bytes memory signature) external returns(address){
-    function verifyValidatorSignature(bytes memory rlpHeader, bytes memory signature) external returns(address){
-        bytes32 hashRLPHeader = keccak256(rlpHeader);
-        console.log("----");
-        console.logBytes32(hashRLPHeader);
-        console.logAddress(ECVerify.ecrecovery(hashRLPHeader, signature));
-        console.logAddress(ECVerify.ecrecovery(hashRLPHeader, signature));
-
-        address validatorAddress = ECVerify.ecrecovery(hashRLPHeader, signature);
-        return validatorAddress;
-    }*/
 
     function parseRlpEncodedHeader(bytes memory rlpHeader) private pure returns (FullHeader memory) {
         FullHeader memory header;

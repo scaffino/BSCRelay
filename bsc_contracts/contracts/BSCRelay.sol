@@ -10,25 +10,15 @@ contract BSCRelay {
 
     using RLPReader for *;
 
-    struct MetaInfo {
-        uint64 iterableIndex;       // index at which the block header is/was stored in the iterable endpoints array
-        uint64 forkId;              // every branch gets a branchId/forkId, stored to speed up block-search/isPartOfMainChain-reqeuests etc.
-        uint64 lockedUntil;         // timestamp until which it is possible to dispute a given block
-        bytes32 latestFork;         // contains the hash of the latest node where the current fork branched off
-        address submitter;          // address of the submitter of the block, stored for incentive and punishment reasons
-        bytes32[] successors;       // in case of forks a blockchain can have multiple successors
+    struct ConsensusState {
+        mapping(address => bool) ValidatorSet;
+        address relayerAddress; //address that receives the fee
     }
 
-    // for proving inclusion etc. only the header and some meta-info is stored. The FullHeader space consumption is high and emitting it once is cheaper than save it in the state
-    struct Header {
-        // uint24 first and uint232 second to pack variables in 1 uint256 variable
-        uint24 blockNumber;
-        uint232 totalDifficulty;
-        bytes32 hash;
-        MetaInfo meta;
-    }
+    //uint64 is the blockHeight
+    mapping(uint64 => ConsensusState) public consensusStates;
 
-    // FullHeader
+    // FullHeader without validator signature
     struct FullHeader {
         bytes32 parentHash;
         bytes32 uncleHash;
@@ -47,12 +37,7 @@ contract BSCRelay {
         uint nonce;
     }
 
-    bytes32 genesisBlockHash;                       // saves the hash of the genesis block the contract was deployed with
-    // maybe the saving of the genesis block could also be achieved with events in the
-    // constructor that gives very small savings
-    mapping (bytes32 => Header) private headers;    // holds all block in a hashmap, key=blockhash, value=reduced block headers with metadata
-
-    // initial VS, initial height, no ful block as we have now
+    // initial VS, initial height, no full block as we have now
     // I have to pass the parameters to the test when I deploy it
     /*constructor (bytes memory _rlpHeader, uint totalDifficulty) {
         bytes32 newBlockHash = keccak256(_rlpHeader);
@@ -75,6 +60,65 @@ contract BSCRelay {
         genesisBlockHash = newBlockHash;
     }*/
 
+    function verifyHeader (bytes memory rlpHeader) external view returns (bool) {
+        bool isValid = true;
+        FullHeader memory fullHeader = parseRlpEncodedHeader(rlpHeader);
+
+        if (fullHeader.blockNumber == 0) {
+            return "Block Number missing";
+        }
+
+/*
+        // Don't waste time checking blocks from the future
+        if header.Time > uint64(time.Now().Unix()) {
+        return consensus.ErrFutureBlock
+        }
+        // Check that the extra-data contains the vanity, validators and signature.
+        if len(header.Extra) < extraVanity {
+        return errMissingVanity
+        }
+        if len(header.Extra) < extraVanity+extraSeal {
+        return errMissingSignature
+        }
+        // check extra data
+        isEpoch := number%p.config.Epoch == 0
+
+        // Ensure that the extra-data contains a signer list on checkpoint, but none otherwise
+        signersBytes := len(header.Extra) - extraVanity - extraSeal
+        if !isEpoch && signersBytes != 0 {
+        return errExtraValidators
+        }
+
+        if isEpoch && signersBytes%validatorBytesLength != 0 {
+        return errInvalidSpanValidators
+        }
+
+        // Ensure that the mix digest is zero as we don't have fork protection currently
+        if header.MixDigest != (common.Hash{}) {
+        return errInvalidMixDigest
+        }
+        // Ensure that the block doesn't contain any uncles which are meaningless in PoA
+        if header.UncleHash != uncleHash {
+        return errInvalidUncleHash
+        }
+        // Ensure that the block's difficulty is meaningful (may not be correct at this point)
+        if number > 0 {
+        if header.Difficulty == nil {
+        return errInvalidDifficulty
+        }
+        }
+        // If all checks passed, validate any special fields for hard forks
+        if err := misc.VerifyForkHashes(chain.Config(), header, false); err != nil {
+        return err
+        }
+        // All basic checks passed, verify cascading fields
+        return p.verifyCascadingFields(chain, header, parents)*/
+
+        return isValid;
+    }
+
+
+    //rlpHeader without validator signature
     function decodeRLPHeader(bytes memory rlpHeader) external view returns(FullHeader memory){
         FullHeader memory fullHeader = parseRlpEncodedHeader(rlpHeader);
         /*console.logBytes32(fullHeader.parentHash);
@@ -94,26 +138,26 @@ contract BSCRelay {
         return fullHeader;
     }
 
+    //extra_data without validator signature
     function getValidatorSet(bytes calldata extraData) external view returns(bytes[] memory){
         uint start = 32;
         bytes[] memory validatorSet = new bytes[](21);
         for (uint ii = 0; ii < 21; ii++){
             validatorSet[ii] = bytes(extraData[start:(start+20)]);
             start += 20;
-            //console.logBytes(validatorSet[ii]);
         }
 
         return validatorSet;
     }
 
+    //is this function necessary?
     function getValidatorSignature(bytes calldata extraData) external view returns (bytes memory) {
         return bytes(extraData[452:]);
     }
 
-    //function verifyValidatorSignature(bytes memory rlpHeader, bytes memory signature) external returns(address){
+    //rlpHeader without validator signature
     function verifyValidatorSignature(bytes memory rlpHeader, bytes memory signature) external view returns(address){
         bytes32 hashRLPHeader = keccak256(rlpHeader);
-
         return ECDSA.recover(hashRLPHeader, signature);
     }
 

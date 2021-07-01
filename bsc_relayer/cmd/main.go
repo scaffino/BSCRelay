@@ -27,26 +27,13 @@ func main() {
 		panic(err)
 	}
 
-	if blockNumber%200 == 0 {
-		headerRLP, err := utils.EncodeHeaderToRLP_EpochBlock(header, big.NewInt(56)) //56 is mainnet
+		headerRLP, err := utils.EncodeHeaderToRLP(header, big.NewInt(56)) //56 is mainnet
 		if err != nil{
 			panic(err)
 		}
 
 		fmt.Println("JSON header -----> " + string(headerJSON))
 		fmt.Println("RLP header -----> " + common.Bytes2Hex(headerRLP))
-
-	} else {
-		headerRLP, err := utils.EncodeHeaderToRLP_noEpochBlock(header, big.NewInt(56))
-		if err != nil{
-			panic(err)
-		}
-
-		fmt.Println("JSON header -----> " + string(headerJSON))
-		fmt.Println("RLP header -----> " + common.Bytes2Hex(headerRLP))
-	}
-
-
 
 }
 

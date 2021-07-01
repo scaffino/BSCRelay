@@ -4,7 +4,6 @@ pragma experimental ABIEncoderV2; //returning struct is not fully supported. I n
 import "hardhat/console.sol";
 import "./RLPReader.sol";
 import "./ECDSA.sol";
-import "./ECVerify.sol";
 
 contract BSCRelay {
 
@@ -17,9 +16,12 @@ contract BSCRelay {
 
     //uint64 is the blockHeight
     mapping(uint64 => ConsensusState) public consensusStates;
+    uint extraVanity = 32; // Fixed number of extra-data prefix bytes reserved for signer vanity
+    uint extraSeal = 65; // Fixed number of extra-data suffix bytes reserved for signer seal
 
     // FullHeader without validator signature
     struct FullHeader {
+        uint chainId;
         bytes32 parentHash;
         bytes32 uncleHash;
         address miner;
@@ -60,61 +62,17 @@ contract BSCRelay {
         genesisBlockHash = newBlockHash;
     }*/
 
-    function verifyHeader (bytes memory rlpHeader) external view returns (bool) {
-        bool isValid = true;
+    //rlpHeader without validator signature
+    function verifyHeader(bytes memory rlpHeader, bytes memory signature) external view returns(uint) {
+        uint errorCode = 0;
         FullHeader memory fullHeader = parseRlpEncodedHeader(rlpHeader);
 
-        if (fullHeader.blockNumber == 0) {
-            return "Block Number missing";
-        }
+        //console.log(rlpHeader.length);
+        require(fullHeader.mixHash == 0x0000000000000000000000000000000000000000000000000000000000000000, "mixHash must be 0x0000000000000000000000000000000000000000000000000000000000000000");
+        require(fullHeader.difficulty == 2 || fullHeader.difficulty == 1, "difficulty incorrect");
+        require(fullHeader.blockNumber != 0, "You can't submit the genesis block");
 
-/*
-        // Don't waste time checking blocks from the future
-        if header.Time > uint64(time.Now().Unix()) {
-        return consensus.ErrFutureBlock
-        }
-        // Check that the extra-data contains the vanity, validators and signature.
-        if len(header.Extra) < extraVanity {
-        return errMissingVanity
-        }
-        if len(header.Extra) < extraVanity+extraSeal {
-        return errMissingSignature
-        }
-        // check extra data
-        isEpoch := number%p.config.Epoch == 0
-
-        // Ensure that the extra-data contains a signer list on checkpoint, but none otherwise
-        signersBytes := len(header.Extra) - extraVanity - extraSeal
-        if !isEpoch && signersBytes != 0 {
-        return errExtraValidators
-        }
-
-        if isEpoch && signersBytes%validatorBytesLength != 0 {
-        return errInvalidSpanValidators
-        }
-
-        // Ensure that the mix digest is zero as we don't have fork protection currently
-        if header.MixDigest != (common.Hash{}) {
-        return errInvalidMixDigest
-        }
-        // Ensure that the block doesn't contain any uncles which are meaningless in PoA
-        if header.UncleHash != uncleHash {
-        return errInvalidUncleHash
-        }
-        // Ensure that the block's difficulty is meaningful (may not be correct at this point)
-        if number > 0 {
-        if header.Difficulty == nil {
-        return errInvalidDifficulty
-        }
-        }
-        // If all checks passed, validate any special fields for hard forks
-        if err := misc.VerifyForkHashes(chain.Config(), header, false); err != nil {
-        return err
-        }
-        // All basic checks passed, verify cascading fields
-        return p.verifyCascadingFields(chain, header, parents)*/
-
-        return isValid;
+        return errorCode;
     }
 
 
@@ -158,34 +116,36 @@ contract BSCRelay {
     //rlpHeader without validator signature
     function verifyValidatorSignature(bytes memory rlpHeader, bytes memory signature) external view returns(address){
         bytes32 hashRLPHeader = keccak256(rlpHeader);
+        console.logBytes32(hashRLPHeader);
         return ECDSA.recover(hashRLPHeader, signature);
     }
 
-    function parseRlpEncodedHeader(bytes memory rlpHeader) private pure returns (FullHeader memory) {
+    function parseRlpEncodedHeader(bytes memory rlpHeader) private view returns (FullHeader memory) {
         FullHeader memory header;
 
         RLPReader.Iterator memory it = rlpHeader.toRlpItem().iterator();
-        uint idx;
-        while(it.hasNext()) {
-            if( idx == 0 ) header.parentHash = bytes32(it.next().toUint());
-            else if ( idx == 1 ) header.uncleHash = bytes32(it.next().toUint());
-            else if ( idx == 2 ) header.miner = address(it.next().toUint());
-            else if ( idx == 3 ) header.stateRoot = bytes32(it.next().toUint());
-            else if ( idx == 4 ) header.transactionsRoot = bytes32(it.next().toUint());
-            else if ( idx == 5 ) header.receiptsRoot = bytes32(it.next().toUint());
-            else if ( idx == 6 ) header.bloom = it.next().toBytes();
-            else if ( idx == 7 ) header.difficulty = it.next().toUint();
-            else if ( idx == 8 ) header.blockNumber = it.next().toUint();
-            else if ( idx == 9 ) header.gasLimit = it.next().toUint();
-            else if ( idx == 10 ) header.gasUsed = it.next().toUint();
-            else if ( idx == 11 ) header.timestamp = it.next().toUint();
-            else if ( idx == 12 ) header.extraData = it.next().toBytes();
-            else if ( idx == 13 ) header.mixHash = bytes32(it.next().toUint());
-            else if ( idx == 14 ) header.nonce = it.next().toUint();
-            else it.next();
+            uint idx;
+            while(it.hasNext()) {
+                if( idx == 0 ) {header.chainId = it.next().toUint(); console.log(header.chainId);}
+                else if( idx ==  1) {header.parentHash = bytes32(it.next().toUint());console.logBytes32(header.parentHash);}
+                else if ( idx == 2 ) {header.uncleHash = bytes32(it.next().toUint());console.logBytes32(header.uncleHash);}
+                else if ( idx == 3 ) {header.miner = address(it.next().toUint());console.logAddress(header.miner);}
+                else if ( idx == 4 ) {header.stateRoot = bytes32(it.next().toUint());console.logBytes32(header.stateRoot);}
+                else if ( idx == 5 ) {header.transactionsRoot = bytes32(it.next().toUint());console.logBytes32(header.transactionsRoot);}
+                else if ( idx == 6 ) {header.receiptsRoot = bytes32(it.next().toUint());console.logBytes32(header.receiptsRoot);}
+                else if ( idx == 7 ) {header.bloom = it.next().toBytes();console.logBytes(header.bloom);}
+                else if ( idx == 8 ) {header.difficulty = it.next().toUint();console.log(header.difficulty);}
+                else if ( idx == 9 ) {header.blockNumber = it.next().toUint();console.log(header.blockNumber);}
+                else if ( idx == 10 ){ header.gasLimit = it.next().toUint();console.log(header.gasLimit);}
+                else if ( idx == 11 ) {header.gasUsed = it.next().toUint();console.log(header.gasUsed);}
+                else if ( idx == 12 ) {header.timestamp = it.next().toUint();console.log(header.timestamp);}
+                else if ( idx == 13 ) {header.extraData = it.next().toBytes();console.logBytes(header.extraData);}
+                else if ( idx == 14 ) {header.mixHash = bytes32(it.next().toUint());console.logBytes32(header.mixHash);}
+                else if ( idx == 15 ) {header.nonce = it.next().toUint();console.log(header.nonce);}
+                else it.next();
 
-            idx++;
-        }
+                idx++;
+            }
 
         return header;
     }

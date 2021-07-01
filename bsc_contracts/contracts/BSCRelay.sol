@@ -10,7 +10,7 @@ contract BSCRelay {
     using RLPReader for *;
 
     struct ConsensusState {
-        mapping(address => bool) ValidatorSet;
+        bytes32 validatorSet; //uint is the height
         address relayerAddress; //address that receives the fee
     }
 
@@ -39,28 +39,10 @@ contract BSCRelay {
         uint nonce;
     }
 
-    // initial VS, initial height, no full block as we have now
-    // I have to pass the parameters to the test when I deploy it
-    /*constructor (bytes memory _rlpHeader, uint totalDifficulty) {
-        bytes32 newBlockHash = keccak256(_rlpHeader);
-
-        FullHeader memory parsedHeader = parseRlpEncodedHeader(_rlpHeader);
-        Header memory newHeader;
-
-        newHeader.hash = newBlockHash;
-        newHeader.blockNumber = uint24(parsedHeader.blockNumber);
-        newHeader.totalDifficulty = uint232(totalDifficulty);
-        newHeader.meta.forkId = maxForkId;  // the first block is no fork (forkId = 0)
-        iterableEndpoints.push(newBlockHash);
-        newHeader.meta.iterableIndex = uint64(iterableEndpoints.length - 1);    // the first block is also an endpoint
-        newHeader.meta.lockedUntil = uint64(block.timestamp);   // the first block does not need a confirmation period
-
-        headers[newBlockHash] = newHeader;
-
-        longestChainEndpoint = newBlockHash;    // the first block is also the longest chain/fork at the moment
-
-        genesisBlockHash = newBlockHash;
-    }*/
+    constructor (address[] memory validatorSet) {
+        bytes32 hashVS = keccak256(abi.encode(validatorSet));
+        consensusStates[0] = ConsensusState(hashVS, address(0));
+    }
 
     //rlpHeader without validator signature
     function verifyHeader(bytes memory rlpHeader, bytes memory signature) external view returns(uint) {

@@ -176,7 +176,7 @@ library RLPReader {
         assembly {
             result := mload(memPtr)
 
-        // shfit to the correct location if neccesary
+        // shift to the correct location if necessary
             if lt(len, 32) {
                 result := div(result, exp(256, sub(32, len)))
             }
@@ -311,6 +311,7 @@ library RLPReader {
             dest += WORD_SIZE;
         }
 
+        // left over bytes. Mask is used to remove unwanted bytes from the word
         // left over bytes. Mask is used to remove unwanted bytes from the word
         uint mask = 256 ** (WORD_SIZE - len) - 1;
         assembly {

@@ -28,6 +28,7 @@ func main() {
 	}
 
 		headerRLP, err := utils.EncodeHeaderToRLP(header, big.NewInt(56)) //56 is mainnet
+		//headerRLP, err := utils.EncodeHeaderToRLP_noChainId(header) //56 is mainnet
 		if err != nil{
 			panic(err)
 		}

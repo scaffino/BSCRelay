@@ -41,6 +41,9 @@ Since at the time of writing the validator set update takes place only once per 
 
 In this way, the chances for relayers to get a fee are also increased.
 
+### Comments
+The slashing and the stake phases are handled by BC. If the validators misbehave and they work together to don't update the validator set, their stake will be slashed in BC.
+
 ### References
 - [Binance Chain Whitepaper](https://github.com/binance-chain/whitepaper/blob/master/WHITEPAPER.md)
 - [Binance Chain Docs](https://docs.binance.org/smart-chain/guides/bsc-intro.html)

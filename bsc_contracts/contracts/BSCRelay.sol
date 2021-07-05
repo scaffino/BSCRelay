@@ -8,7 +8,10 @@ import "./BytesLib.sol";
 
 contract BSCRelay {
 
-    using RLPReader for *;
+    //using RLPReader for *;
+    using RLPReader for RLPReader.RLPItem;
+    using RLPReader for RLPReader.Iterator;
+    using RLPReader for bytes;
 
     struct ConsensusState {
         bytes32 validatorSetHash;
@@ -19,6 +22,7 @@ contract BSCRelay {
     mapping(uint64 => ConsensusState) public consensusStates;
     uint64 currentHeight = 0;
     uint validatorNumber = 21;
+    uint constant signatureBytes = 65;
 
     // FullHeader without validator signature
     struct FullHeader {
@@ -46,39 +50,90 @@ contract BSCRelay {
         consensusStates[0] = ConsensusState(hashVS, address(0));
     }
 
-    // rlpHeader without validator signature, validatorSet is the validator set of the previous epoch block
-    function verifyHeader(bytes memory rlpHeader, bytes memory signature, address[] memory validatorSet) external {
-        FullHeader memory fullHeader = parseRlpEncodedHeader(rlpHeader);
-        require(fullHeader.mixHash == 0, "mixHash must be 0x0000000000000000000000000000000000000000000000000000000000000000");
-        require(fullHeader.difficulty == 2 || fullHeader.difficulty == 1, "Difficulty is incorrect.");
-        require(fullHeader.blockNumber != 0, "You can't submit the genesis block.");
+    function compareBlockHeader (bytes memory rlpSignedHeader, bytes memory rlpUnsignedHeader) external view returns(bool) {
+        RLPReader.RLPItem[] memory unsignedHeader = rlpUnsignedHeader.toRlpItem().toList();
+        RLPReader.RLPItem[] memory signedHeader = rlpSignedHeader.toRlpItem().toList();
 
-        //if it is epoch block
-        if (fullHeader.blockNumber % 200 == 0) {
-            //check that all the epoch blocks are relayed. Skip an epoch block is not allowed
-            require(fullHeader.blockNumber < currentHeight+201, "Previous epoch block is missing. You cannot submit subsequent epoch blocks if a previous one is missing.");
+        if(unsignedHeader.length == signedHeader.length - 1) return false;
 
-            //check if signature of the block is in the current validator set
-            address signer = verifyValidatorSignature(rlpHeader, signature);
-            bool boolean = false;
-            for (uint ii = 0; ii < validatorNumber; ii++) {
-                if (signer == validatorSet[ii]) {
-                    boolean = true;
-                    break;
-                }
+        // Check header and signedHeader contain the same data
+        for (uint256 i=0; i < rlpSignedHeader.length; i++) {
+            // Skip extra data field
+            if (i==12) {
+
+                bytes memory extraDataSignedHeader = signedHeader[i].toBytes(); //unsigned header does contain chainId, extradata 12th
+                bytes memory extraDataUnSignedHeader = unsignedHeader[i+1].toBytes(); //unsigned header does contain chainId, extradata 12th
+                uint signatureStart = extraDataUnSignedHeader.length - signatureBytes;
+                bytes memory extraDataUnsigned = BytesLib.slice(extraDataUnSignedHeader, 0, signatureStart);
+
+                return keccak256(extraDataSignedHeader) == keccak256(extraDataUnSignedHeader); //true
+
+            } else {
+                return keccak256(unsignedHeader[i+1].toBytes()) == keccak256(signedHeader[i].toBytes()); //false
             }
-            require(boolean == true, "The validator of the block is not included in the validator set.");
+        }
+        return false;
+    }
 
-            //check next 15 blocks. What if the submitter is misbehaving? He can write whatever he wants!
+    // rlpHeader without validator signature, validatorSet is the validator set of the previous epoch block
+    function submitEpochBlock(bytes[] memory rlpHeader, bytes[] memory signature, address[] memory validatorSet) external {
 
-            //if everything is okay, update the validator set
-            bytes[] memory newValidatorSet = getValidatorSet(fullHeader.extraData);
-            bytes32 hashVS = keccak256(abi.encode(newValidatorSet));
-            currentHeight = currentHeight + 200;
-            consensusStates[currentHeight] = ConsensusState(hashVS, msg.sender);
-            console.log(currentHeight);
+        //temporarily set to 2 for simplicity
+        require(rlpHeader.length == 2, "rlpHeaders provided must be 12");
+        require(signature.length == 2, "signatures provided must be 12");
+        //we must set to 12
+        //require(rlpHeader.length == 12, "rlpHeaders provided must be 12");
+        //require(signature.length == 12, "signatures provided must be 12");
+
+        require(consensusStates[currentHeight].validatorSetHash == keccak256(abi.encode(validatorSet)), "Wrong validator set provided.");
+
+        // epoch blocks
+        FullHeader memory currentBlockHeader = parseRlpEncodedHeader(rlpHeader[0]);
+        FullHeader memory previousBlockHeader = currentBlockHeader;
+
+        //for (uint jj = 0; jj < 12; jj++) {
+        for (uint jj = 0; jj < 2; jj++) {
+
+                if(jj == 0){
+                    require(currentBlockHeader.blockNumber == currentHeight+200, "You must submit the next epoch block.");
+                }
+
+                //all blocks
+                require(currentBlockHeader.mixHash == 0, "mixHash must be 0x0000000000000000000000000000000000000000000000000000000000000000");
+                require(currentBlockHeader.difficulty == 2 || currentBlockHeader.difficulty == 1, "Difficulty is not correct, it must be 1 or 2.");
+
+                //signature check
+                address signer = verifyValidatorSignature(rlpHeader[jj], signature[jj]);
+                console.log(signer);
+                bool boolean = false;
+                for (uint ii = 0; ii < validatorNumber; ii++) {
+                    if (signer == validatorSet[ii]) {
+                        boolean = true;
+                        break;
+                    }
+                }
+                require(boolean == true, "The validator of the block is not included in the validator set.");
+
+                //chain check
+                //check parent, check the blocks are not signed by the same validator set
+                if (jj != 0) {
+                    //I need to pass the signed rlp headers
+                   // require(currentBlockHeader.parentHash == previousBlockHeader., "");
+                }
+
+                previousBlockHeader = currentBlockHeader;
+                currentBlockHeader = parseRlpEncodedHeader(rlpHeader[jj]);
 
         }
+
+        //if everything is okay, update the validator set
+        FullHeader memory epochBlockHeader = parseRlpEncodedHeader(rlpHeader[0]);
+        bytes[] memory newValidatorSet = getValidatorSet(epochBlockHeader.extraData);
+        bytes32 hashVS = keccak256(abi.encode(newValidatorSet));
+        currentHeight = currentHeight + 200;
+        consensusStates[currentHeight] = ConsensusState(hashVS, msg.sender);
+        console.log(currentHeight);
+
     }
 
     //rlpHeader without validator signature
@@ -114,9 +169,9 @@ contract BSCRelay {
         return validatorSet;
     }
 
-    //is this function necessary?
     function getValidatorSignature(bytes calldata extraData) external view returns (bytes memory) {
-        return bytes(extraData[452:]);
+        uint signatureStart = extraData.length - signatureBytes;
+        return BytesLib.slice(extraData, signatureStart, signatureBytes);
     }
 
     //rlpHeader without validator signature

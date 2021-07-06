@@ -3,38 +3,72 @@ package main
 import (
 	"bsc_relayer/pkg/utils"
 	"context"
-	"fmt"
+	"encoding/json"
 	"github.com/binance-chain/bsc-go-client/client"
 	"github.com/ethereum/go-ethereum/common"
+	"io/ioutil"
 	"math/big"
 	"os"
 	"strconv"
 )
+
+//upper case means public, lower case means private
+type testData struct {
+	UnsignedHeaders [12]string `json:"unsignedHeaders"`
+	SignedHeaders [12]string `json:"signedHeaders"`
+}
 
 func main() {
 
 	blockNumber, err := strconv.Atoi(os.Args[1])
 
 	var c, _ = client.Dial("wss://bsc-ws-node.nariox.org:443")
-	header,err := c.HeaderByNumber(context.Background(),big.NewInt(int64(blockNumber)))
-
 	if err != nil{
 		panic(err)
 	}
 
-	headerJSON, err := header.MarshalJSON()
+	/*headerJSON, err := header.MarshalJSON()
 	if err != nil{
 		panic(err)
-	}
+	}*/
 
-		headerRLP, err := utils.EncodeHeaderToRLP(header, big.NewInt(56)) //56 is mainnet
-		//headerRLP, err := utils.EncodeHeaderToRLP_noChainId(header) //56 is mainnet
+	var unsignedHeaders [12]string
+	var signedHeaders [12]string
+
+	for ii := 0; ii < 12; ii++ {
+
+		header,err := c.HeaderByNumber(context.Background(),big.NewInt(int64(blockNumber+ii)))
+
+		unsignedHeaderRLP, err := utils.EncodeHeaderToRLP(header, big.NewInt(56)) //56 is mainnet
 		if err != nil{
 			panic(err)
 		}
+		unsignedHeaders[ii] = "0x" + common.Bytes2Hex(unsignedHeaderRLP)
 
-		fmt.Println("JSON header -----> " + string(headerJSON))
-		fmt.Println("RLP header -----> " + common.Bytes2Hex(headerRLP))
+		signedHeaderRLP, err := utils.EncodeHeaderToRLP_noChainId(header) //56 is mainnet
+		if err != nil{
+			panic(err)
+		}
+		signedHeaders[ii] = "0x" + common.Bytes2Hex(signedHeaderRLP)
+
+	}
+
+	testData := &testData{
+		UnsignedHeaders: unsignedHeaders,
+		SignedHeaders:   signedHeaders,
+	}
+	//fmt.Printf("testData header -----> %v", testData)
+
+	jsonHeaders, err := json.Marshal(testData)
+	if err != nil{
+		panic(err)
+	}
+	//fmt.Printf("jsonHeaders header -----> %s", string(jsonHeaders))
+
+	err = ioutil.WriteFile("jsonHeaders.json", jsonHeaders, 0644)
+	if err != nil{
+		panic(err)
+	}
 
 }
 

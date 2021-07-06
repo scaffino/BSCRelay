@@ -320,5 +320,19 @@ library RLPReader {
             mstore(dest, or(destpart, srcpart))
         }
     }
+
+    /*
+     * @dev A cheaper version of keccak256(toRlpBytes(item)) that avoids copying memory.
+     * @return keccak256 hash of RLP encoded bytes.
+     */
+    function rlpBytesKeccak256(RLPItem memory item) internal pure returns (bytes32) {
+        uint256 ptr = item.memPtr;
+        uint256 len = item.len;
+        bytes32 result;
+        assembly {
+            result := keccak256(ptr, len)
+        }
+        return result;
+    }
 }
 

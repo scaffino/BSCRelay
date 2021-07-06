@@ -70,7 +70,7 @@ contract BSCRelay {
                 if (keccak256(extraDataUnsigned) != keccak256(extraDataUnSignedHeader)) return false;
 
             } else {
-                if (keccak256(unsignedHeader[kk+1].toBytes()) != keccak256(signedHeader[kk].toBytes())) return false;
+                if (unsignedHeader[kk+1].rlpBytesKeccak256() != signedHeader[kk].rlpBytesKeccak256()) return false;
             }
         }
         return true;

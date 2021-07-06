@@ -90,7 +90,7 @@ contract BSCRelay {
         for (uint jj = 0; jj < thresholdNumberBlocks; jj++) {
             console.log("Loop start:", gasleft());
 
-            FullHeader memory currentBlockHeaderUnsigned = parseRlpEncodedHeader(rlpUnsignedHeaders[jj]); //to do: not use function but only get what is needed (vedi linea sotto)
+            RLPReader.RLPItem[] memory currentBlockHeaderUnsigned = rlpUnsignedHeaders[jj].toRlpItem().toList();
             RLPReader.RLPItem[] memory signedHeader = rlpSignedHeaders[jj].toRlpItem().toList();
 
             console.log("Parse header:", gasleft());
@@ -98,10 +98,17 @@ contract BSCRelay {
             require(compareBlockHeader(rlpUnsignedHeaders[jj], rlpSignedHeaders[jj]), "The signed and unsigned headers do not match");
             console.log("Compare header:", gasleft());
             if(jj == 0){
-                require(currentBlockHeaderUnsigned.blockNumber == currentHeight+200, "You must submit the next epoch block.");
+                require(currentBlockHeaderUnsigned[9].toUint() == currentHeight+200, "You must submit the next epoch block.");
+
+                bytes[] memory newValidatorSet = getValidatorSet(currentBlockHeaderUnsigned[13].toBytes());
+                bytes32 hashVS = keccak256(abi.encode(newValidatorSet));
+                currentHeight = currentHeight + 200;
+                consensusStates[currentHeight] = ConsensusState(hashVS, msg.sender);
+                console.log(gasleft());
             }
-            require(currentBlockHeaderUnsigned.mixHash == 0, "mixHash must be 0x0000000000000000000000000000000000000000000000000000000000000000");
-            require(currentBlockHeaderUnsigned.difficulty == 2 || currentBlockHeaderUnsigned.difficulty == 1, "Difficulty is not correct, it must be 1 or 2.");
+
+            require(currentBlockHeaderUnsigned[14].toUint() == 0, "mixHash must be 0x0000000000000000000000000000000000000000000000000000000000000000");
+            require(currentBlockHeaderUnsigned[8].toUint() == 2 || currentBlockHeaderUnsigned[8].toUint() == 1, "Difficulty is not correct, it must be 1 or 2.");
 
             //signature check
             bytes memory signature = getValidatorSignature(signedHeader[12].toBytes());
@@ -125,18 +132,10 @@ contract BSCRelay {
             // check the 12 blocks are a chain
             if (jj != 0) {
                 bytes32 blockHash = keccak256(rlpSignedHeaders[jj-1]);
-                require(currentBlockHeaderUnsigned.parentHash == blockHash , "Wrong parent, this is not a chain");
+                require(bytes32(currentBlockHeaderUnsigned[1].toUint()) == blockHash , "Wrong parent, this is not a chain");
             }
             console.log("Check chain:", gasleft());
         }
-        console.log(gasleft());
-
-        //if everything is okay, update the validator set
-        FullHeader memory epochBlockHeader = parseRlpEncodedHeader(rlpUnsignedHeaders[0]);
-        bytes[] memory newValidatorSet = getValidatorSet(epochBlockHeader.extraData);
-        bytes32 hashVS = keccak256(abi.encode(newValidatorSet));
-        currentHeight = currentHeight + 200;
-        consensusStates[currentHeight] = ConsensusState(hashVS, msg.sender);
         console.log(gasleft());
 
     }
@@ -191,7 +190,7 @@ contract BSCRelay {
         RLPReader.Iterator memory it = rlpHeader.toRlpItem().iterator();
             uint idx;
             while(it.hasNext()) {
-                if( idx == 0 ) header.chainId = it.next().toUint();
+                if( idx == 0 ) header.chainId = it.next().toUint(); //there is not chainId in the signed header
                 else if( idx ==  1) header.parentHash = bytes32(it.next().toUint()); //*
                 else if ( idx == 2 ) header.uncleHash = bytes32(it.next().toUint());
                 else if ( idx == 3 ) header.miner = address(it.next().toUint());

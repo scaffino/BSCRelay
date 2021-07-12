@@ -1,0 +1,117 @@
+\section{Relay, our solution}
+
+I will present two different solutions for the relay. \\Approach 1 is optimized in terms of number of blocks that has to relayed but presents critical costs in terms of block verification costs. \\Approach 2, on the other hand, optimizes the block verification costs but requires a full reconstruction of the chain and it is therefore more expensive in terms of storage and header submissions.
+
+\noindent
+\subsection{Approach 1: relay only epoch blocks}
+In this section I present and discuss the key concepts of the relay in the case that only the epoch blocks are relayed.\\
+
+\noindent
+\textbf{Assumptions}\\
+The assumptions we make for this relay solution are the following: 
+\begin{itemize}
+\item At least $\frac{2}{3}$ + 1 of the current validators are honest relayers, if they act as relayers, even if we do not have any incentive to enforce their honest behaviour. BSC validators have to behave honestly in BSC otherwise they will lose their deposited stake. However, they have no incentive to behave honestly with respect to the relay. In fact, even if they behave honestly in BSC, a majority of cooperating dishonest validators could be able to relay a valid chain of invalid blocks to the relay smart contract and this chain of invalid blocks would be considered valid by the relay. 
+%\item Less than 4 validators change for every validator set update. By looking at BSC validator sets up until now, the validator sets hardly change. From the start of BSC until now (29 August 2020 - 8 July 2021, 8977053 mined blocks), the validator set still has 7 out of 21 of the initial validators. On average, 1.4 validators per month are changed. 
+\item The relay starts with a trusted initial validator set that must be equal to the current one in BSC.
+\end{itemize}
+\noindent
+\textbf{Blocks relayed}\\
+For the correct functioning of the relay, relayers have to relay to the contract the following:  
+\begin{itemize}
+    \item The BSC epoch block headers. The relay smart contract checks their validity and finality.% A block is valid if has been signed by a validator belonging to the current validator set. %A block is final if has 15 valid subsequent blocks.
+    \item Subsequent 11 BSC block headers for each epoch block. Their validity is checked. 
+\end{itemize}
+%In more detail, relayers have to provide the relay smart contract with:
+%\begin{itemize}
+%    \item \rlph of the epoch block E$_n$ and his next 11 blocks (signature of the validator excluded from the \rlph) - used to verify the signatures. 
+%    \item \rlph of the epoch block E$_n$ and his next 11 blocks (signature of the validator included in the \rlph) - used to compute the block hash and compare it with the previous block parent hash.
+%    \item validator set VS$_{E_{n-1}}$ of the previous epoch block, i.e. epoch block E$_{n-1}$. For every epoch block E$_{n}$, the smart contract only stores the hash of each validator set H(E$_{n}$). The submitted validator set VS$_{E_{n-1}}$ is hashed and checked against the stored validator set hash (the validator addresses have to be submitted to the relay in the order they appear in the respective epoch block, otherwise the hash is different). This prevents the submission of a wrong validator set from a misbehaving relayer. %The last 4 blocks of the 11 subsequent blocks are validated using the new validator set extracted from the epoch block \extradata.   
+%\end{itemize}
+
+
+\noindent
+\textbf{Storage}\\
+As we know, Ethereum is expensive in terms of storage costs. For this reason, we have to minimize as much as possible the information we store in the smart contract. The BSC relay smart contract only stores: 
+\begin{itemize}
+    \item Each epoch block height and the hash of the validator set written in its \extradata field.
+    \item The address of the relayer of that epoch block. 
+\end{itemize}
+
+\noindent
+\textbf{Block verification}\\
+When the BSC relay smart contract is deployed on Ethereum, it allows to verify whether a block B belongs to the BSC blockchain or not. This verification can be requested by calling the \verify function and by providing the following input parameters:
+\begin{itemize}
+    \item \rlph of the epoch block E$_n$ and his next 11 blocks (signature of the validator excluded from the \rlph) - used to verify the signatures. 
+    \item \rlph of the epoch block E$_n$ and his next 11 blocks (signature of the validator included in the \rlph) - used to compute the block hash and compare it with the previous block parent hash.
+    %\item validator set VS$_{E_{n-1}}$ of the previous epoch block, i.e. epoch block E$_{n-1}$. For every epoch block E$_{n}$, the smart contract stores the hash of its validator set H(E$_{n}$). The submitted validator set VS$_{E_{n-1}}$ is hashed and checked against the validator set hash stored in the contract. This prevents the submission of a wrong validator set from a misbehaving relayer. %The last 4 blocks of the 11 subsequent blocks are validated using the new validator set extracted from the epoch block \extradata.   
+    \item validator set of the last epoch block. The submitted validator set is hashed and checked against the validator set hash stored in the contract. This prevents the submission of a wrong validator set.
+\end{itemize}
+The \verify function verifies the validity of the signature for each block and checks whether the 12 submitted blocks are correctly chained to each other.
+%Two different block verifications can take place, depending on the block height and on the current status of the relay.
+%Let's say that the last epoch block height stored in the relay is E$_n$, then:
+%It is important to recall that block verification holds with the assumption that at least $\frac{2}{3}$ + 1 of the current validators are honest, even if they do not have any incentive to enforce their honest behaviour.
+%Let's say the last epoch block submitted to the relay is block E$_n$. But the last validator set change took place at E$_{n-10}$. Then a block validation for a block with height in [E$_{n-10}$ + 11, E$_{n+1}$ + 11] consists in submitting the header of the block plus the header of the subsequent $k$ blocks, where $k$ can be either 11 or 15, depending on the security the user wants to achieve. \textcolor{blue}{15 subsequent blocks are secure. What if we relax to 11? What security guarantees we have now?}
+The relay can only verify rather recent blocks whose height is equal to or bigger than the first block validated with the newest/current validator set. This means that if the validator set doesn't change for a week, the user can verify blocks mined at most a week back in time; if the newest validator set took charge today, than the user can only verify blocks mined today. Also, this requires a good synchronization between BSC and the relay smart contract. \\We do not have any solution for block verification of blocks belonging to an old validator set. In this case, we should also rely on the assumption that at least $\frac{2}{3}$ + 1 of the validators belonging to a previous validator set (different from the current one) are honest. If a majority of past dishonest validators cooperate, they could be able to act as relayers and come up with a 12-blocks chain that do not belong to BSC but they are considered valid by the relay. \textcolor{blue}{Can we extend the honesty assumption to all the validator sets of the past? It would be a strong assumption.}\\
+It is important to mention that BSC has been live since 29th August 2020 and so far the validator set updates have been quite rare. At the moment, after 8977053 mined blocks, the BSC validator set still has 7 out of 21 of the initial validators. On average, 1.4 validators per month change.\\The verification of an epoch block corresponds to the submission of the epoch block.\\ \textcolor{blue}{How do we verify a block whose height is in the range [E$_{n}$, E$_n$ + $\frac{N}{2}$ - 1]? Their subsequent blocks must be checked using two different validator sets. This problem would be solved using the stronger assumption that at least $\frac{2}{3}$ + 1 of the validators of all the validator sets are honest and extending the number of subsequent blocks to be checked.}\\
+
+\noindent
+\textbf{Validator set updates}\\
+The relay smart contract has to correctly update the validator set status. To do this, we require that all the epoch blocks are relayed along with their next 11 blocks. The smart contract verifies the validity of the epoch block and of its subsequent blocks by checking the signatures and by checking whether they constitutes a valid chain or not. If all the checks pass, than the validator set addresses in the \extradata field of the epoch block are hashed. The hash, the epoch block height and the relayer address are stored in the contract.\\
+
+\noindent
+\textbf{Epoch block submission}\\
+The epoch block submission requires the same \rlph mentioned in the ``Block verification" paragraph and the validator set VS$_{E_{n-1}}$ of the previous epoch block, i.e. epoch block E$_{n-1}$. For every epoch block E$_{n}$, the smart contract stores the hash of its validator set H(E$_{n}$). The submitted validator set VS$_{E_{n-1}}$ is hashed and checked against the validator set hash stored in the contract. This prevents the submission of a wrong validator set from a misbehaving relayer.\\ %The last 4 blocks of the 11 subsequent blocks are validated using the new validator set extracted from the epoch block \extradata.   
+
+
+\noindent
+\textbf{Incentive for relayers}\\
+The user that relayed a valid epoch block E$_n$ will earn a fee whenever an block verification is requested for a block whose height is comprised in $[E_n + N/2, E_{n+1} + N/2]$. The + N/2 comes from the fact that the validator set change takes effectively place at blocks with height (epoch+N/2). In this way, a relayer of an epoch block will get the fees for each block verification asked in a range of 200 blocks.\\
+
+
+\noindent
+\textbf{Security guarantees}\\
+Assuming that at least $\frac{2}{3}$ + 1 of the current validators acting as relayers are honest relayers, than the relay cannot accept invalid epoch blocks. This holds because at least 5 out of 11 next subsequent blocks must come from honest validators and, by definition, they do not follow a chain build upon an invalid epoch block. The relay smart contract enforces this by requiring that each of the 12 blocks must be signed by a different validator (this is okay since they take turn in a round robin schedule). The same argument also applies to the block verification. If the relayers do not collude with the BSC validators, then there is no way they can cheat and come up with valid signatures for the blocks. Given the assumptions, we have therefore correctness and soundness:
+\begin{itemize}
+    \item Correctness: a valid block will be always considered valid by the relay
+    \item Soundness: an invalid block will be always considered invalid by the relay
+\end{itemize}
+The relay would only have to handle a single chain since forks are not possible.\\  
+
+\noindent
+\textbf{Costs}\\
+On average, the submission of an epoch block costs 1350k gas, i.e. 1350k gas every 10 minutes. These costs include the verification of all the 12 blocks and the validator set update. \textcolor{blue}{Another solution would be to directly read the cross-chain package from BC and update the validator set. This would make the validator set updates chaper.}\\On the other hand, on average, the verification of a block costs 1250k gas if we require 11 subsequent blocks.
+%On average, the verification of a block costs 1670k gas if we require 15 subsequent blocks, and 1250k gas if we require 11 subsequent blocks.\\
+\textcolor{red}{Still very expensive...}\\
+
+
+\noindent
+\textbf{Possible optimizations}\\
+Since the validator set update takes place only once per day, it would be possible to only relay one epoch block per day, namely the first one right after 00:00 UTC, rather than $\approx$ 144 epoch blocks per day. For each relayed block, the relayer will get the fees for every block verification asked in a range of 28800 blocks.\\
+There might be the chance we can reduce the gas for each block validation.\\
+
+%\noindent
+%\textbf{Open problems}\\
+%What if we relay epoch blocks + the next 15 blocks? Would we have stronger security garantees? In this case, in the block verification, what happens when the 16 blocks belong to two different validator sets? E.g., block verification asked for block 397 (blocks up to 410 validated with epoch block 200 validator set, blocks from 411 and 412 validated with a different validator set belonging to epoch block 400. Does the user have to submit two validator sets?  
+
+\subsection{Appraoch 2: relay all the blocks}
+The other option is to submit all the blocks and not only the epoch blocks. In this case, we would spend 105k gas for each block submission (105k every 3 seconds, 62650k every 10 minutes) but the block verification would only consist in checking if the block hash is included in the chain, and would therefore be much cheaper.\\ We would also have to temporarily handle forks.  
+
+%\subsection{Block submission}
+%Every single block belonging to BSC chain has to be submitted to the relay contract. 
+%To verify the validity of an epoch block the relayer has to provide the relay smart contract with:
+%\begin{itemize}
+%    \item \rlph of the epoch block (signature of the validator excluded) - used to verify the signature 
+%    \item \rlph of the epoch block (signature of the validator included) - used to calculate the block hash and to extract the validator signature
+%    \item validator set of the previous epoch block (the addresses will be hashed together and checked against the hash of the validator set stored in the contract). In this way, wrong validator sets cannot be used 
+%    \item \rlph of the next subsequent $\frac{2}{3}N +1$ blocks. The validity of these blocks is checked in the smart contract. $\frac{2}{3}N +1$ corresponds to the number of subsequent blocks needed to get finality. 
+%\end{itemize}
+ 
+
+%\subsection{Block verification}
+%The block verification step allows a user to send a request to the Ethereum chain asking whether or not a certain block has been included in the BSC chain. 
+%Verification of a block B requires the submission of the \rlph of B and of the validator set in force for that block. The smart contract simply checks whether the hash of that block has been previously stored (and correctly validated) by the smart contract.
+
+
+%\subsection{Storage}
+
+%\subsection{Cost analysis}

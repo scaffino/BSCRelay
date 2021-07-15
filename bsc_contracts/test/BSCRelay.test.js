@@ -7,7 +7,7 @@ describe("BSCRelay", function() {
 
     beforeEach(async () => {
         bscRelayContractFactory = await ethers.getContractFactory("BSCRelay");
-        bscRelay = await bscRelayContractFactory.deploy(["0x22b81f8e175ffde54d797fe11eb03f9e3bf75f1d","0x2a7cdd959bfe8d9487b2a43b33565295a698f7e2","0x2d4c407bbe49438ed859fe965b140dcf1aab71a9","0x2f7be8361c80a4c1e7e9aaf001d0877f1cfde218","0x35e7a025f4da968de7e4d7e4004197917f4070f1","0x4430b3230294d12c6ab2aac5c2cd68e80b16b581","0x6488aa4d1955ee33403f8ccb1d4de5fb97c7ade2","0x685b1ded8013785d6623cc18d214320b6bb64759","0x68bf0b8b6fb4e317a0f9d6f03eaf8ce6675bc60d","0x6bbad7cf34b5fa511d8e963dbba288b1960e75d6","0x78f3adfc719c99674c072166708589033e2d9afe","0x7ae2f5b9e386cd1b50a4550696d957cb4900f03a","0x82012708dafc9e1b880fd083b32182b869be8e09","0x8c4d90829ce8f72d0163c1d5cf348a862d550630","0x9ef9f4360c606c7ab4db26b016007d3ad0ab86a0","0xb8f7166496996a7da21cf1f1b04d9b3e26a3d077","0xc2be4ec20253b8642161bc3f444f53679c1f3d47","0xce2fd7544e0b2cc94692d4a704debef7bcb61328","0xd6caa02bbebaebb5d7e581e4b66559e635f805ff","0xea0a6e3c511bbd10f4519ece37dc24887e11b55d","0xee01c3b1283aa067c58eab4709f85e99d46de5fe"]);
+        bscRelay = await bscRelayContractFactory.deploy(testdata.VS_block200, 0);
         await bscRelay.deployed();
     });
 
@@ -56,28 +56,27 @@ describe("BSCRelay", function() {
 
             const validatorSet = await bscRelay.getValidatorSet("0xd883010100846765746888676f312e31352e35856c696e7578000000fc3ca6b72465176c461afb316ebc773c61faee85a6515daa295e26495cef6f69dfa69911d9d8e4f3bbadb89b29a97c6effb8a411dabc6adeefaa84f5067c8bbe2d4c407bbe49438ed859fe965b140dcf1aab71a93f349bbafec1551819b8be1efea2fc46ca749aa14430b3230294d12c6ab2aac5c2cd68e80b16b581685b1ded8013785d6623cc18d214320b6bb6475970f657164e5b75689b64b7fd1fa275f334f28e187ae2f5b9e386cd1b50a4550696d957cb4900f03a8b6c8fd93d6f4cea42bbb345dbc6f0dfdb5bec739bb832254baf4e8b4cc26bd2b52b31389b56e98b9f8ccdafcc39f3c7d6ebf637c9151673cbc36b88a6f79b60359f141df90a0c745125b131caaffd12b218c5d6af1f979ac42bc68d98a5a0d796c6ab01b8f7166496996a7da21cf1f1b04d9b3e26a3d077be807dddb074639cd9fa61b47676c064fc50d62cce2fd7544e0b2cc94692d4a704debef7bcb61328e2d3a739effcd3a99387d015e260eefac72ebea1e9ae3261a475a27bb1028f140bc2a7c843318afdea0a6e3c511bbd10f4519ece37dc24887e11b55dee226379db83cffc681495730c11fdde79ba4c0c9a98e2f70f793acf0b59638046e90ad01a903e5fdfbd7c8e63c0d14dc59c7549094110bfb8bed3c61f7b022da8d0b5b318acbd894e0fdd9c0612304515e00e9301");
 
-            expect(validatorSet[0]).to.equal("0x2465176c461afb316ebc773c61faee85a6515daa");
-            expect(validatorSet[1]).to.equal("0x295e26495cef6f69dfa69911d9d8e4f3bbadb89b");
-            expect(validatorSet[2]).to.equal("0x29a97c6effb8a411dabc6adeefaa84f5067c8bbe");
-            expect(validatorSet[3]).to.equal("0x2d4c407bbe49438ed859fe965b140dcf1aab71a9");
-            expect(validatorSet[4]).to.equal("0x3f349bbafec1551819b8be1efea2fc46ca749aa1");
-            expect(validatorSet[5]).to.equal("0x4430b3230294d12c6ab2aac5c2cd68e80b16b581");
-            expect(validatorSet[6]).to.equal("0x685b1ded8013785d6623cc18d214320b6bb64759");
-            expect(validatorSet[7]).to.equal("0x70f657164e5b75689b64b7fd1fa275f334f28e18");
-            expect(validatorSet[8]).to.equal("0x7ae2f5b9e386cd1b50a4550696d957cb4900f03a");
-            expect(validatorSet[9]).to.equal("0x8b6c8fd93d6f4cea42bbb345dbc6f0dfdb5bec73");
-            expect(validatorSet[10]).to.equal("0x9bb832254baf4e8b4cc26bd2b52b31389b56e98b");
-            expect(validatorSet[11]).to.equal("0x9f8ccdafcc39f3c7d6ebf637c9151673cbc36b88");
-            expect(validatorSet[12]).to.equal("0xa6f79b60359f141df90a0c745125b131caaffd12");
-            expect(validatorSet[13]).to.equal("0xb218c5d6af1f979ac42bc68d98a5a0d796c6ab01");
-            expect(validatorSet[14]).to.equal("0xb8f7166496996a7da21cf1f1b04d9b3e26a3d077");
-            expect(validatorSet[15]).to.equal("0xbe807dddb074639cd9fa61b47676c064fc50d62c");
-            expect(validatorSet[16]).to.equal("0xce2fd7544e0b2cc94692d4a704debef7bcb61328");
-            expect(validatorSet[17]).to.equal("0xe2d3a739effcd3a99387d015e260eefac72ebea1");
-            expect(validatorSet[18]).to.equal("0xe9ae3261a475a27bb1028f140bc2a7c843318afd");
-            expect(validatorSet[19]).to.equal("0xea0a6e3c511bbd10f4519ece37dc24887e11b55d");
-            expect(validatorSet[20]).to.equal("0xee226379db83cffc681495730c11fdde79ba4c0c");
-
+            expect(validatorSet[0]).to.equal(ethers.utils.getAddress("0x2465176c461afb316ebc773c61faee85a6515daa"));
+            expect(validatorSet[1]).to.equal(ethers.utils.getAddress("0x295e26495cef6f69dfa69911d9d8e4f3bbadb89b"));
+            expect(validatorSet[2]).to.equal(ethers.utils.getAddress("0x29a97c6effb8a411dabc6adeefaa84f5067c8bbe"));
+            expect(validatorSet[3]).to.equal(ethers.utils.getAddress("0x2d4c407bbe49438ed859fe965b140dcf1aab71a9"));
+            expect(validatorSet[4]).to.equal(ethers.utils.getAddress("0x3f349bbafec1551819b8be1efea2fc46ca749aa1"));
+            expect(validatorSet[5]).to.equal(ethers.utils.getAddress("0x4430b3230294d12c6ab2aac5c2cd68e80b16b581"));
+            expect(validatorSet[6]).to.equal(ethers.utils.getAddress("0x685b1ded8013785d6623cc18d214320b6bb64759"));
+            expect(validatorSet[7]).to.equal(ethers.utils.getAddress("0x70f657164e5b75689b64b7fd1fa275f334f28e18"));
+            expect(validatorSet[8]).to.equal(ethers.utils.getAddress("0x7ae2f5b9e386cd1b50a4550696d957cb4900f03a"));
+            expect(validatorSet[9]).to.equal(ethers.utils.getAddress("0x8b6c8fd93d6f4cea42bbb345dbc6f0dfdb5bec73"));
+            expect(validatorSet[10]).to.equal(ethers.utils.getAddress("0x9bb832254baf4e8b4cc26bd2b52b31389b56e98b"));
+            expect(validatorSet[11]).to.equal(ethers.utils.getAddress("0x9f8ccdafcc39f3c7d6ebf637c9151673cbc36b88"));
+            expect(validatorSet[12]).to.equal(ethers.utils.getAddress("0xa6f79b60359f141df90a0c745125b131caaffd12"));
+            expect(validatorSet[13]).to.equal(ethers.utils.getAddress("0xb218c5d6af1f979ac42bc68d98a5a0d796c6ab01"));
+            expect(validatorSet[14]).to.equal(ethers.utils.getAddress("0xb8f7166496996a7da21cf1f1b04d9b3e26a3d077"));
+            expect(validatorSet[15]).to.equal(ethers.utils.getAddress("0xbe807dddb074639cd9fa61b47676c064fc50d62c"));
+            expect(validatorSet[16]).to.equal(ethers.utils.getAddress("0xce2fd7544e0b2cc94692d4a704debef7bcb61328"));
+            expect(validatorSet[17]).to.equal(ethers.utils.getAddress("0xe2d3a739effcd3a99387d015e260eefac72ebea1"));
+            expect(validatorSet[18]).to.equal(ethers.utils.getAddress("0xe9ae3261a475a27bb1028f140bc2a7c843318afd"));
+            expect(validatorSet[19]).to.equal(ethers.utils.getAddress("0xea0a6e3c511bbd10f4519ece37dc24887e11b55d"));
+            expect(validatorSet[20]).to.equal(ethers.utils.getAddress("0xee226379db83cffc681495730c11fdde79ba4c0c"));
         });
     });
 
@@ -110,7 +109,7 @@ describe("BSCRelay", function() {
 
             //rlp without signature - block 200
             await expect(bscRelay.submitEpochBlock(testdata.unsignedHeaders, testdata.signedHeaders, ["0x2465176c461afb316ebc773c61faee85a6515daa","0x295e26495cef6f69dfa69911d9d8e4f3bbadb89b","0x29a97c6effb8a411dabc6adeefaa84f5067c8bbe","0x2d4c407bbe49438ed859fe965b140dcf1aab71a9","0x3f349bbafec1551819b8be1efea2fc46ca749aa1","0x4430b3230294d12c6ab2aac5c2cd68e80b16b581","0x685b1ded8013785d6623cc18d214320b6bb64759","0x70f657164e5b75689b64b7fd1fa275f334f28e18","0x7ae2f5b9e386cd1b50a4550696d957cb4900f03a","0x8b6c8fd93d6f4cea42bbb345dbc6f0dfdb5bec73","0x9bb832254baf4e8b4cc26bd2b52b31389b56e98b", "0x9f8ccdafcc39f3c7d6ebf637c9151673cbc36b88","0xa6f79b60359f141df90a0c745125b131caaffd12","0xb218c5d6af1f979ac42bc68d98a5a0d796c6ab01","0xb8f7166496996a7da21cf1f1b04d9b3e26a3d077","0xbe807dddb074639cd9fa61b47676c064fc50d62c","0xce2fd7544e0b2cc94692d4a704debef7bcb61328","0xe2d3a739effcd3a99387d015e260eefac72ebea1","0xe9ae3261a475a27bb1028f140bc2a7c843318afd","0xea0a6e3c511bbd10f4519ece37dc24887e11b55d","0xee226379db83cffc681495730c11fdde79ba4c0c"])).
-                to.be.revertedWith("Wrong validator set provided.");
+                to.be.revertedWith("Wrong validator set provided. You must provide the current validator set.");
         });
 
         it("Reverts if mixHash is not 0", async function () {
@@ -131,14 +130,65 @@ describe("BSCRelay", function() {
             to.be.revertedWith("The validator of the block is not included in the validator set.");
         });
 
-        it("Check if a valid submission works", async function () {
+        it("Reverts if the blocks are not chained together", async function () {
+            //rlp without signature - block 200
+            await expect(bscRelay.submitEpochBlock(testdata.unsignedHeaders_notAChain, testdata.signedHeaders_notAChain,  ["0x22b81f8e175ffde54d797fe11eb03f9e3bf75f1d","0x2a7cdd959bfe8d9487b2a43b33565295a698f7e2","0x2d4c407bbe49438ed859fe965b140dcf1aab71a9","0x2f7be8361c80a4c1e7e9aaf001d0877f1cfde218","0x35e7a025f4da968de7e4d7e4004197917f4070f1","0x4430b3230294d12c6ab2aac5c2cd68e80b16b581","0x6488aa4d1955ee33403f8ccb1d4de5fb97c7ade2","0x685b1ded8013785d6623cc18d214320b6bb64759","0x68bf0b8b6fb4e317a0f9d6f03eaf8ce6675bc60d","0x6bbad7cf34b5fa511d8e963dbba288b1960e75d6","0x78f3adfc719c99674c072166708589033e2d9afe","0x7ae2f5b9e386cd1b50a4550696d957cb4900f03a","0x82012708dafc9e1b880fd083b32182b869be8e09","0x8c4d90829ce8f72d0163c1d5cf348a862d550630","0x9ef9f4360c606c7ab4db26b016007d3ad0ab86a0","0xb8f7166496996a7da21cf1f1b04d9b3e26a3d077","0xc2be4ec20253b8642161bc3f444f53679c1f3d47","0xce2fd7544e0b2cc94692d4a704debef7bcb61328","0xd6caa02bbebaebb5d7e581e4b66559e635f805ff","0xea0a6e3c511bbd10f4519ece37dc24887e11b55d","0xee01c3b1283aa067c58eab4709f85e99d46de5fe"])).
+            to.be.revertedWith("Wrong parent, this is not a chain.");
+        });
 
+        it("Reverts if the same signer occurs more than once", async function () {
+            //rlp without signature - block 200
+            await expect(bscRelay.submitEpochBlock(testdata.unsignedHeaders_signerRecurring, testdata.signedHeaders_signerRecurring,  ["0x22b81f8e175ffde54d797fe11eb03f9e3bf75f1d","0x2a7cdd959bfe8d9487b2a43b33565295a698f7e2","0x2d4c407bbe49438ed859fe965b140dcf1aab71a9","0x2f7be8361c80a4c1e7e9aaf001d0877f1cfde218","0x35e7a025f4da968de7e4d7e4004197917f4070f1","0x4430b3230294d12c6ab2aac5c2cd68e80b16b581","0x6488aa4d1955ee33403f8ccb1d4de5fb97c7ade2","0x685b1ded8013785d6623cc18d214320b6bb64759","0x68bf0b8b6fb4e317a0f9d6f03eaf8ce6675bc60d","0x6bbad7cf34b5fa511d8e963dbba288b1960e75d6","0x78f3adfc719c99674c072166708589033e2d9afe","0x7ae2f5b9e386cd1b50a4550696d957cb4900f03a","0x82012708dafc9e1b880fd083b32182b869be8e09","0x8c4d90829ce8f72d0163c1d5cf348a862d550630","0x9ef9f4360c606c7ab4db26b016007d3ad0ab86a0","0xb8f7166496996a7da21cf1f1b04d9b3e26a3d077","0xc2be4ec20253b8642161bc3f444f53679c1f3d47","0xce2fd7544e0b2cc94692d4a704debef7bcb61328","0xd6caa02bbebaebb5d7e581e4b66559e635f805ff","0xea0a6e3c511bbd10f4519ece37dc24887e11b55d","0xee01c3b1283aa067c58eab4709f85e99d46de5fe"])).
+            to.be.revertedWith("Same signer recurring. Not valid blocks.");
+        });
+
+        it("Check if a valid submission works", async function () {
             //rlp without signature - block 200
             let tx = await bscRelay.submitEpochBlock(testdata.unsignedHeaders, testdata.signedHeaders, ["0x22b81f8e175ffde54d797fe11eb03f9e3bf75f1d","0x2a7cdd959bfe8d9487b2a43b33565295a698f7e2","0x2d4c407bbe49438ed859fe965b140dcf1aab71a9","0x2f7be8361c80a4c1e7e9aaf001d0877f1cfde218","0x35e7a025f4da968de7e4d7e4004197917f4070f1","0x4430b3230294d12c6ab2aac5c2cd68e80b16b581","0x6488aa4d1955ee33403f8ccb1d4de5fb97c7ade2","0x685b1ded8013785d6623cc18d214320b6bb64759","0x68bf0b8b6fb4e317a0f9d6f03eaf8ce6675bc60d","0x6bbad7cf34b5fa511d8e963dbba288b1960e75d6","0x78f3adfc719c99674c072166708589033e2d9afe","0x7ae2f5b9e386cd1b50a4550696d957cb4900f03a","0x82012708dafc9e1b880fd083b32182b869be8e09","0x8c4d90829ce8f72d0163c1d5cf348a862d550630","0x9ef9f4360c606c7ab4db26b016007d3ad0ab86a0","0xb8f7166496996a7da21cf1f1b04d9b3e26a3d077","0xc2be4ec20253b8642161bc3f444f53679c1f3d47","0xce2fd7544e0b2cc94692d4a704debef7bcb61328","0xd6caa02bbebaebb5d7e581e4b66559e635f805ff","0xea0a6e3c511bbd10f4519ece37dc24887e11b55d","0xee01c3b1283aa067c58eab4709f85e99d46de5fe"]);
             const receipt = await ethers.provider.getTransactionReceipt(tx.hash);
-            console.log(receipt);
-
+            //console.log(receipt);
         });
+    });
+
+    describe("verifyBlock", function () {
+
+        it("Reverts if the validator set of the block you want to verify it is not equal to the current one", async function () {
+            //rlp without signature - block 200
+            await expect(bscRelay.verifyBlock(testdata.unsignedHeaders_wrongVS, testdata.signedHeaders_wrongVS, ["0x22b81f8e175ffde54d797fe11eb03f9e3bf75f1d","0x2a7cdd959bfe8d9487b2a43b33565295a698f7e2","0x2d4c407bbe49438ed859fe965b140dcf1aab71a9","0x2f7be8361c80a4c1e7e9aaf001d0877f1cfde218","0x35e7a025f4da968de7e4d7e4004197917f4070f1","0x4430b3230294d12c6ab2aac5c2cd68e80b16b581","0x6488aa4d1955ee33403f8ccb1d4de5fb97c7ade2","0x685b1ded8013785d6623cc18d214320b6bb64759","0x68bf0b8b6fb4e317a0f9d6f03eaf8ce6675bc60d","0x6bbad7cf34b5fa511d8e963dbba288b1960e75d6","0x78f3adfc719c99674c072166708589033e2d9afe","0x7ae2f5b9e386cd1b50a4550696d957cb4900f03a","0x82012708dafc9e1b880fd083b32182b869be8e09","0x8c4d90829ce8f72d0163c1d5cf348a862d550630","0x9ef9f4360c606c7ab4db26b016007d3ad0ab86a0","0xb8f7166496996a7da21cf1f1b04d9b3e26a3d077","0xc2be4ec20253b8642161bc3f444f53679c1f3d47","0xce2fd7544e0b2cc94692d4a704debef7bcb61328","0xd6caa02bbebaebb5d7e581e4b66559e635f805ff","0xea0a6e3c511bbd10f4519ece37dc24887e11b55d","0xee01c3b1283aa067c58eab4709f85e99d46de5fe"])).
+            to.be.revertedWith("You can only verify blocks whose validator set it is equal to the current one.");
+        });
+
+        it("Submission of 2 epoch blocks and verification for a block in the middle", async function () {
+            //submit block 200
+            let tx1 = await bscRelay.submitEpochBlock(testdata.unsignedHeaders_block200, testdata.signedHeaders_block200, testdata.VS_block200); // VS is the same as 0
+            //submit block 400
+            let tx2 = await bscRelay.submitEpochBlock(testdata.unsignedHeaders_block400, testdata.signedHeaders_block400, testdata.VS_block200);
+            //verify block 280
+            let tx3 =  await bscRelay.verifyBlock(testdata.unsignedHeaders_block280, testdata.signedHeaders_block280, testdata.VS_block200);
+        });
+
+        it("Submission of 2 epoch blocks and fail of the verification for a block in the middle", async function () {
+            bscRelay = await bscRelayContractFactory.deploy(testdata.VS_block283800, 283600);
+            await bscRelay.deployed();
+            //submit block 283800
+            let tx1 = await bscRelay.submitEpochBlock(testdata.unsignedHeaders_block283800, testdata.signedHeaders_block283800, testdata.VS_block283800); //VS is the same as 283600
+            //submit block 284000
+            let tx2 = await bscRelay.submitEpochBlock(testdata.unsignedHeaders_block284000, testdata.signedHeaders_block284000, testdata.VS_block283800);
+            //verify block 283900. I submit the VS of 284000 that is the current one but it is different from the validator set needed to validate block 283900
+            await expect(bscRelay.verifyBlock(testdata.unsignedHeaders_block283900, testdata.signedHeaders_block283900, testdata.VS_block284000)).
+            to.be.revertedWith("You can only verify blocks whose validator set it is equal to the current one.");
+        });
+
+        it("Reverts if block height comprised in the range [E_b + 1 , E_b + N/2 - 1] - block 202", async function () {
+            //rlp without signature - block 200
+            await expect(bscRelay.verifyBlock(testdata.unsignedHeaders_block202, testdata.signedHeaders_block202, ["0x22b81f8e175ffde54d797fe11eb03f9e3bf75f1d","0x2a7cdd959bfe8d9487b2a43b33565295a698f7e2","0x2d4c407bbe49438ed859fe965b140dcf1aab71a9","0x2f7be8361c80a4c1e7e9aaf001d0877f1cfde218","0x35e7a025f4da968de7e4d7e4004197917f4070f1","0x4430b3230294d12c6ab2aac5c2cd68e80b16b581","0x6488aa4d1955ee33403f8ccb1d4de5fb97c7ade2","0x685b1ded8013785d6623cc18d214320b6bb64759","0x68bf0b8b6fb4e317a0f9d6f03eaf8ce6675bc60d","0x6bbad7cf34b5fa511d8e963dbba288b1960e75d6","0x78f3adfc719c99674c072166708589033e2d9afe","0x7ae2f5b9e386cd1b50a4550696d957cb4900f03a","0x82012708dafc9e1b880fd083b32182b869be8e09","0x8c4d90829ce8f72d0163c1d5cf348a862d550630","0x9ef9f4360c606c7ab4db26b016007d3ad0ab86a0","0xb8f7166496996a7da21cf1f1b04d9b3e26a3d077","0xc2be4ec20253b8642161bc3f444f53679c1f3d47","0xce2fd7544e0b2cc94692d4a704debef7bcb61328","0xd6caa02bbebaebb5d7e581e4b66559e635f805ff","0xea0a6e3c511bbd10f4519ece37dc24887e11b55d","0xee01c3b1283aa067c58eab4709f85e99d46de5fe"])).
+            to.be.revertedWith("Block verification for block height comprised in the range [E_b + 1 , E_b + N/2 - 1] is not yet enabled.");
+        });
+
+        it("Check if a valid submission works", async function () {
+            let tx = await bscRelay.verifyBlock(testdata.unsignedHeaders_block150, testdata.signedHeaders_block150, ["0x22b81f8e175ffde54d797fe11eb03f9e3bf75f1d","0x2a7cdd959bfe8d9487b2a43b33565295a698f7e2","0x2d4c407bbe49438ed859fe965b140dcf1aab71a9","0x2f7be8361c80a4c1e7e9aaf001d0877f1cfde218","0x35e7a025f4da968de7e4d7e4004197917f4070f1","0x4430b3230294d12c6ab2aac5c2cd68e80b16b581","0x6488aa4d1955ee33403f8ccb1d4de5fb97c7ade2","0x685b1ded8013785d6623cc18d214320b6bb64759","0x68bf0b8b6fb4e317a0f9d6f03eaf8ce6675bc60d","0x6bbad7cf34b5fa511d8e963dbba288b1960e75d6","0x78f3adfc719c99674c072166708589033e2d9afe","0x7ae2f5b9e386cd1b50a4550696d957cb4900f03a","0x82012708dafc9e1b880fd083b32182b869be8e09","0x8c4d90829ce8f72d0163c1d5cf348a862d550630","0x9ef9f4360c606c7ab4db26b016007d3ad0ab86a0","0xb8f7166496996a7da21cf1f1b04d9b3e26a3d077","0xc2be4ec20253b8642161bc3f444f53679c1f3d47","0xce2fd7544e0b2cc94692d4a704debef7bcb61328","0xd6caa02bbebaebb5d7e581e4b66559e635f805ff","0xea0a6e3c511bbd10f4519ece37dc24887e11b55d","0xee01c3b1283aa067c58eab4709f85e99d46de5fe"]);
+        });
+
 
     });
 

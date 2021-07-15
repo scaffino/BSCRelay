@@ -4,6 +4,7 @@ import (
 	"bsc_relayer/pkg/utils"
 	"context"
 	"encoding/json"
+	"fmt"
 	"github.com/binance-chain/bsc-go-client/client"
 	"github.com/ethereum/go-ethereum/common"
 	"io/ioutil"
@@ -34,6 +35,20 @@ func main() {
 
 	var unsignedHeaders [12]string
 	var signedHeaders [12]string
+
+	testHeader, err := c.HeaderByNumber(context.Background(),big.NewInt(int64(blockNumber)))
+
+	//testUnsignedHeaderRLP, err := utils.EncodeHeaderToRLP(testHeader, big.NewInt(56)) //56 is mainnet
+	//if err != nil{
+	//	panic(err)
+	//}
+
+	jsonTestHeader, err := json.Marshal(testHeader);
+	if err != nil{
+		panic(err)
+	}
+
+	fmt.Println("test header -----> ", string(jsonTestHeader))
 
 	for ii := 0; ii < 12; ii++ {
 

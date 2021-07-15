@@ -43,10 +43,11 @@ contract BSCRelay {
         uint nonce;
     }
 
-    constructor (address[] memory validatorSet) {
+    constructor (address[] memory validatorSet, uint64 blockHeight) {
         // only the hash of the validator set is stored. The validator set has to be provided
         bytes32 hashVS = keccak256(abi.encode(validatorSet));
-        consensusStates[0] = ConsensusState(hashVS, address(0));
+        consensusStates[blockHeight] = ConsensusState(hashVS, address(0));
+        currentHeight = blockHeight;
     }
 
     //unsigned needs chainId
@@ -76,35 +77,33 @@ contract BSCRelay {
         return true;
     }
 
-    // rlpHeader without validator signature, validatorSet is the validator set of the previous epoch block
     function submitEpochBlock(bytes[] memory rlpUnsignedHeaders, bytes[] memory rlpSignedHeaders, address[] memory validatorSet) external {
-        console.log(gasleft());
 
         require(rlpUnsignedHeaders.length == thresholdNumberBlocks, "rlpHeaders provided must be 12");
         require(rlpSignedHeaders.length == thresholdNumberBlocks, "rlpSignedHeader provided must be 12");
-
-        require(consensusStates[currentHeight].validatorSetHash == keccak256(abi.encode(validatorSet)), "Wrong validator set provided.");
+        require(consensusStates[currentHeight].validatorSetHash == keccak256(abi.encode(validatorSet)), "Wrong validator set provided. You must provide the current validator set.");
 
         address[] memory signers = new address[](thresholdNumberBlocks);
 
         for (uint jj = 0; jj < thresholdNumberBlocks; jj++) {
-            console.log("Loop start:", gasleft());
+            //console.log("Loop start:", gasleft());
 
             RLPReader.RLPItem[] memory currentBlockHeaderUnsigned = rlpUnsignedHeaders[jj].toRlpItem().toList();
             RLPReader.RLPItem[] memory signedHeader = rlpSignedHeaders[jj].toRlpItem().toList();
 
-            console.log("Parse header:", gasleft());
+            //console.log("Block number:", convert(currentBlockHeaderUnsigned[9].toUint()));
 
             require(compareBlockHeader(rlpUnsignedHeaders[jj], rlpSignedHeaders[jj]), "The signed and unsigned headers do not match");
-            console.log("Compare header:", gasleft());
+            //console.log("Compare header:", gasleft());
+            //update validator set
             if(jj == 0){
-                require(currentBlockHeaderUnsigned[9].toUint() == currentHeight+200, "You must submit the next epoch block.");
+                require(currentBlockHeaderUnsigned[9].toUint() == currentHeight + 200, "You must submit the next epoch block.");
 
-                bytes[] memory newValidatorSet = getValidatorSet(currentBlockHeaderUnsigned[13].toBytes());
+                address[] memory newValidatorSet = getValidatorSet(currentBlockHeaderUnsigned[13].toBytes());
                 bytes32 hashVS = keccak256(abi.encode(newValidatorSet));
                 currentHeight = currentHeight + 200;
                 consensusStates[currentHeight] = ConsensusState(hashVS, msg.sender);
-                console.log(gasleft());
+
             }
 
             require(currentBlockHeaderUnsigned[14].toUint() == 0, "mixHash must be 0x0000000000000000000000000000000000000000000000000000000000000000");
@@ -121,52 +120,86 @@ contract BSCRelay {
                 }
             }
             require(isIncluded, "The validator of the block is not included in the validator set.");
-            console.log("Check signature:", gasleft());
 
             //check the blocks have all different signers (we assume that at least 2/3+1 validators are honest and they all do their job)
             for (uint ii = 0; ii < jj; ii++) {
                 require(signer != signers[ii], "Same signer recurring. Not valid blocks.");
             }
             signers[jj] = signer;
-            console.log("Check double:", gasleft());
+            //console.log("Check double:", gasleft());
+            // check the 12 blocks are a chain
+            if (jj != 0) {
+                bytes32 blockHash = keccak256(rlpSignedHeaders[jj-1]);
+                require(bytes32(currentBlockHeaderUnsigned[1].toUint()) == blockHash , "Wrong parent, this is not a chain.");
+            }
+        }
+    }
+
+    function verifyBlock(bytes[] memory rlpUnsignedHeaders, bytes[] memory rlpSignedHeaders, address[] memory validatorSet) external returns(bool){
+
+        require(rlpUnsignedHeaders.length == thresholdNumberBlocks, "rlpHeaders provided must be 12");
+        require(rlpSignedHeaders.length == thresholdNumberBlocks, "rlpSignedHeader provided must be 12");
+
+        require(consensusStates[currentHeight].validatorSetHash == keccak256(abi.encode(validatorSet)), "Wrong validator set provided. You must provide the current validator set.");
+
+        address[] memory signers = new address[](thresholdNumberBlocks);
+
+        for (uint jj = 0; jj < thresholdNumberBlocks; jj++) {
+
+            RLPReader.RLPItem[] memory currentBlockHeaderUnsigned = rlpUnsignedHeaders[jj].toRlpItem().toList();
+            RLPReader.RLPItem[] memory signedHeader = rlpSignedHeaders[jj].toRlpItem().toList();
+
+            require(compareBlockHeader(rlpUnsignedHeaders[jj], rlpSignedHeaders[jj]), "The signed and unsigned headers do not match");
+
+            uint64 blockNumber = convert(currentBlockHeaderUnsigned[9].toUint());
+            uint64 moduloBlockNumber = blockNumber % 200;
+            require(moduloBlockNumber >= 12 || moduloBlockNumber < 1, "Block verification for block height comprised in the range [E_b + 1 , E_b + N/2 - 1] is not yet enabled.");
+            //check if the validator set of block you want to verify is equal to the current validator set
+            require(consensusStates[uint64((blockNumber/200)*200)].validatorSetHash == keccak256(abi.encode(validatorSet)), "You can only verify blocks whose validator set it is equal to the current one.");
+
+            require(currentBlockHeaderUnsigned[14].toUint() == 0, "mixHash must be 0x0000000000000000000000000000000000000000000000000000000000000000");
+            require(currentBlockHeaderUnsigned[8].toUint() == 2 || currentBlockHeaderUnsigned[8].toUint() == 1, "Difficulty is not correct, it must be 1 or 2.");
+
+            //signature check
+            bytes memory signature = getValidatorSignature(signedHeader[12].toBytes());
+            address signer = verifyValidatorSignature(rlpUnsignedHeaders[jj], signature);
+            bool isIncluded = false;
+            for (uint ii = 0; ii < validatorNumber; ii++) {
+                if (signer == validatorSet[ii]) {
+                    isIncluded = true;
+                    break;
+                }
+            }
+            require(isIncluded, "The validator of the block is not included in the validator set.");
+
+            //check the blocks have all different signers (we assume that at least 2/3+1 validators are honest and they all do their job)
+            for (uint ii = 0; ii < jj; ii++) {
+                require(signer != signers[ii], "Same signer recurring. Not valid blocks.");
+            }
+            signers[jj] = signer;
             // check the 12 blocks are a chain
             if (jj != 0) {
                 bytes32 blockHash = keccak256(rlpSignedHeaders[jj-1]);
                 require(bytes32(currentBlockHeaderUnsigned[1].toUint()) == blockHash , "Wrong parent, this is not a chain");
             }
-            console.log("Check chain:", gasleft());
         }
-        console.log(gasleft());
-
+        return true;
     }
 
     //rlpHeader without validator signature
     function decodeRLPHeader(bytes memory rlpHeader) external view returns(FullHeader memory){
         FullHeader memory fullHeader = parseRlpEncodedHeader(rlpHeader);
-        /*console.logBytes32(fullHeader.parentHash);
-        console.logBytes32(fullHeader.uncleHash);
-        console.logAddress(fullHeader.miner);
-        console.logBytes32(fullHeader.stateRoot);
-        console.logBytes32(fullHeader.transactionsRoot);
-        console.logBytes32(fullHeader.receiptsRoot);
-        console.log(fullHeader.difficulty);
-        console.log(fullHeader.blockNumber);
-        console.log(fullHeader.gasLimit);
-        console.log(fullHeader.gasUsed);
-        console.log(fullHeader.timestamp);
-        console.logBytes(fullHeader.extraData);
-        console.log(fullHeader.nonce);*/
 
         return fullHeader;
     }
 
     //extra_data without validator signature
-    function getValidatorSet(bytes memory extraData) public view returns(bytes[] memory){
+    function getValidatorSet(bytes memory extraData) public view returns(address[] memory){
         uint extraVanity = 32;
         uint addressLength = 20;
-        bytes[] memory validatorSet = new bytes[](validatorNumber);
+        address[] memory validatorSet = new address[](validatorNumber);
         for (uint ii = 0; ii < validatorNumber; ii++){
-            validatorSet[ii] = BytesLib.slice(extraData, extraVanity, addressLength);
+            validatorSet[ii] = BytesLib.toAddress(BytesLib.slice(extraData, extraVanity, addressLength), 0);
             extraVanity += addressLength;
         }
 
@@ -212,6 +245,10 @@ contract BSCRelay {
             }
 
         return header;
+    }
+
+    function convert(uint256 _a) private returns (uint64) {
+        return uint64(_a);
     }
 
 }

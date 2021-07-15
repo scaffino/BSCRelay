@@ -1,10 +1,15 @@
 pragma solidity >=0.7.0 <0.9.0;
 pragma experimental ABIEncoderV2; //returning struct is not fully supported. I need this line to enable it
 
-import "hardhat/console.sol";
+//import "hardhat/console.sol";
 import "./RLPReader.sol";
 import "./ECDSA.sol";
 import "./BytesLib.sol";
+
+/// @title BSCRelay: An Ethereum smart contract enabling cross-blockchain block verification
+/// @author Giulia Scaffino, Michael Sober
+/// @notice You can use this contract for submitting epoch block headers and
+///         for verifying whether a block is included in the BSC blockchain
 
 contract BSCRelay {
 

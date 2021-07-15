@@ -8,6 +8,7 @@
  */
 pragma solidity >=0.7.3 <0.9.0;
 
+// This library comes from https://github.com/GNSPS/solidity-bytes-utils/blob/master/contracts/BytesLib.sol
 
 library BytesLib {
     function concat(

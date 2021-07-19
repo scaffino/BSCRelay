@@ -1,15 +1,15 @@
 \section{Binance Smart Chain}
 Before diving into BSC Relay, a few words about BSC are needed in order to understand the problems we will face.
-BSC is a solution that brings programmability and interoperability to Binance Chain (BC). Binance Smart Chain relies on a system of 21 validators with Proof of Staked Authority (PoSA) consensus that can support short block time (2-3 seconds) and lower fees. The most bonded validator candidates of staking will become validators and produce blocks. The double-sign detection and other slashing logic guarantee security, stability, and chain finality. The Binance Smart Chain also supports EVM-compatible smart contracts and protocols.
+BSC is a solution that brings programmability and interoperability to Binance Chain (BC). BSC relies on a system of 21 validators with Proof of Staked Authority (PoSA) consensus that can support short block time (2-3 seconds) and lower fees. The most bonded validator candidates of staking will become validators and produce blocks. The double-sign detection and other slashing logic guarantee security, stability, and chain finality. The BSC also supports EVM-compatible smart contracts and protocols.
 \noindent
-BC does the staking and governance parts for BSC, this means that the validator set update and the double sign slash of BSC is updated through interchain communication. BC is responsible for holding the staking function to determine validators of BSC through independent election, and the election workflow are performed via staking procedure once per day - the outcome of the election, namely the new validator set, is forwarded from BC to BSC once every 24 hours at 00:00 UTC.
+BC does the staking and governance parts for BSC, this means that the validator set updates of BSC are broadcasted from BC to BSC through cross-chain packages. BC is responsible for holding the staking function to determine validators of BSC through independent election, and the election workflow are performed via staking procedure once per day - the outcome of the election, namely the new validator set, is forwarded from BC to BSC once every 24 hours at 00:00 UTC.
 
 \subsection{Consensus}
-The consensus engine is Parlia, which is similar to Ethereum Clique. BSC combines Delegated Proof of Stake (PoS) and Proof of Authority (PoA), so that:
+The consensus engine is Parlia, which is similar to Ethereum Clique. BSC combines Delegated Proof of Stake and Proof of Authority, so that:
 \begin{itemize}
-    \item Blocks are produced by a limited set of validators.
-    \item Validators sign the blocks in a round robin scheduling. A valid block is signed by a single validator.
-    \item Validator sets are elected in and out based on a staking based governance.
+	\item Blocks are produced by a limited set of N validators.
+	\item Validators sign the blocks in a round-robin scheduling. A valid block is signed by a single validator.
+	\item Validator sets are elected in and out based on a staking based governance.
 \end{itemize}
 \noindent
-While producing blocks, the existing BSC validators check whether there is a \ValidatorSetUpdate message relayed onto BSC periodically. If there is, they will update the validator set after an epoch period, i.e. a block whose height is multiple of 200. Compared to non-epoch blocks, epoch blocks have an extended \extradata field that, along with the validator signature, contains the 21 addresses of the validator set. From one epoch block to the next one there are approximately 10 minutes.\\Validators set changes take place at the (epoch+N/2) blocks, so that the validator set in the new epoch block can be acknowledged by at least 51\% of the validators. \\ A block is considered final when it has $\frac{2}{3}$N + 1 = 15 valid subsequent blocks. 
+While producing blocks, the existing BSC validators check whether there is a \ValidatorSetUpdate message relayed onto BSC periodically. If there is, they will update the validator set after an epoch period, i.e., a block whose height is a multiple of 200. Compared to non-epoch blocks, epoch blocks have an extended \extradata field that, along with the validator signature, contains the 21 addresses of the validator set. From one epoch block to the next one there are approximately 10 minutes.\\Validators set changes take place at the (epoch+N/2) blocks, so that the validator set in the new epoch block can be acknowledged by at least 51\% of the validators. \\ A block is considered final when it has $\frac{2}{3}$N + 1 = 15 valid subsequent blocks. 

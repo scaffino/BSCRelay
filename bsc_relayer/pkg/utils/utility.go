@@ -2,10 +2,12 @@ package utils
 
 import (
 	"bytes"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/rlp"
 	"math/big"
 )
+
 
 func EncodeHeaderToRLP(header *types.Header, chainId *big.Int) ([]byte, error) {
 	buffer := new(bytes.Buffer)
@@ -57,11 +59,23 @@ func EncodeHeaderToRLP_noChainId(header *types.Header) ([]byte, error) {
 		header.Nonce,
 	})
 
-	/*fmt.Println("extra ----> " + common.Bytes2Hex(header.Extra));
-	fmt.Println("sign ----> " + common.Bytes2Hex(header.Extra[len(header.Extra)-65:len(header.Extra)]));*/
-
-	// be careful when passing byte-array as buffer, the pointer can change if the buffer is used again
 	return buffer.Bytes(), err
+}
+
+func GetValidatorSet(header *types.Header) []common.Address {
+
+	var extradata = header.Extra
+	var validatorSet []common.Address
+
+	var start = 33
+	var length = 20
+
+	for ii := 0; ii < 21; ii++ {
+		validatorSet[ii] = common.BytesToAddress(extradata[start:start+length])
+		start = start + length
+	}
+
+	return validatorSet
 }
 
 

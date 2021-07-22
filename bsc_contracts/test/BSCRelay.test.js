@@ -144,7 +144,7 @@ describe("BSCRelay", function() {
 
         it("Check if a valid submission works", async function () {
             //rlp without signature - block 200
-            let tx = await bscRelay.submitEpochBlock(testdata.unsignedHeaders, testdata.signedHeaders, ["0x22b81f8e175ffde54d797fe11eb03f9e3bf75f1d","0x2a7cdd959bfe8d9487b2a43b33565295a698f7e2","0x2d4c407bbe49438ed859fe965b140dcf1aab71a9","0x2f7be8361c80a4c1e7e9aaf001d0877f1cfde218","0x35e7a025f4da968de7e4d7e4004197917f4070f1","0x4430b3230294d12c6ab2aac5c2cd68e80b16b581","0x6488aa4d1955ee33403f8ccb1d4de5fb97c7ade2","0x685b1ded8013785d6623cc18d214320b6bb64759","0x68bf0b8b6fb4e317a0f9d6f03eaf8ce6675bc60d","0x6bbad7cf34b5fa511d8e963dbba288b1960e75d6","0x78f3adfc719c99674c072166708589033e2d9afe","0x7ae2f5b9e386cd1b50a4550696d957cb4900f03a","0x82012708dafc9e1b880fd083b32182b869be8e09","0x8c4d90829ce8f72d0163c1d5cf348a862d550630","0x9ef9f4360c606c7ab4db26b016007d3ad0ab86a0","0xb8f7166496996a7da21cf1f1b04d9b3e26a3d077","0xc2be4ec20253b8642161bc3f444f53679c1f3d47","0xce2fd7544e0b2cc94692d4a704debef7bcb61328","0xd6caa02bbebaebb5d7e581e4b66559e635f805ff","0xea0a6e3c511bbd10f4519ece37dc24887e11b55d","0xee01c3b1283aa067c58eab4709f85e99d46de5fe"]);
+            let tx = await bscRelay.submitEpochBlock(testdata.unsignedHeaders, testdata.signedHeaders, testdata.VS_block200);
             const receipt = await ethers.provider.getTransactionReceipt(tx.hash);
             //console.log(receipt);
         });
@@ -185,13 +185,29 @@ describe("BSCRelay", function() {
             to.be.revertedWith("Block verification for block height comprised in the range [E_b + 1 , E_b + N/2 - 1] is not yet enabled.");
         });
 
-        it("Check if a valid submission works", async function () {
+        it("Check if a valid verification works", async function () {
             let tx = await bscRelay.verifyBlock(testdata.unsignedHeaders_block150, testdata.signedHeaders_block150, ["0x22b81f8e175ffde54d797fe11eb03f9e3bf75f1d","0x2a7cdd959bfe8d9487b2a43b33565295a698f7e2","0x2d4c407bbe49438ed859fe965b140dcf1aab71a9","0x2f7be8361c80a4c1e7e9aaf001d0877f1cfde218","0x35e7a025f4da968de7e4d7e4004197917f4070f1","0x4430b3230294d12c6ab2aac5c2cd68e80b16b581","0x6488aa4d1955ee33403f8ccb1d4de5fb97c7ade2","0x685b1ded8013785d6623cc18d214320b6bb64759","0x68bf0b8b6fb4e317a0f9d6f03eaf8ce6675bc60d","0x6bbad7cf34b5fa511d8e963dbba288b1960e75d6","0x78f3adfc719c99674c072166708589033e2d9afe","0x7ae2f5b9e386cd1b50a4550696d957cb4900f03a","0x82012708dafc9e1b880fd083b32182b869be8e09","0x8c4d90829ce8f72d0163c1d5cf348a862d550630","0x9ef9f4360c606c7ab4db26b016007d3ad0ab86a0","0xb8f7166496996a7da21cf1f1b04d9b3e26a3d077","0xc2be4ec20253b8642161bc3f444f53679c1f3d47","0xce2fd7544e0b2cc94692d4a704debef7bcb61328","0xd6caa02bbebaebb5d7e581e4b66559e635f805ff","0xea0a6e3c511bbd10f4519ece37dc24887e11b55d","0xee01c3b1283aa067c58eab4709f85e99d46de5fe"]);
         });
-
-
     });
 
+    describe("getLastEpochBlockSubmitted", function () {
+        it("Check the block number of the last epoch block stored in the contract", async function () {
+            const lastEpochBlockHeight1 = await bscRelay.getLastEpochBlockSubmitted();
+            expect(lastEpochBlockHeight1).to.equal(0);
+
+            //valid submission of epoch block 200
+            let tx1 = await bscRelay.submitEpochBlock(testdata.unsignedHeaders, testdata.signedHeaders, testdata.VS_block200);
+            const receipt1 = await ethers.provider.getTransactionReceipt(tx1.hash);
+            const lastEpochBlockHeight2 = await bscRelay.getLastEpochBlockSubmitted();
+            expect(lastEpochBlockHeight2).to.equal(200);
+
+            let tx2 = await bscRelay.submitEpochBlock(testdata.unsignedHeaders_block400, testdata.signedHeaders_block400, testdata.VS_block200);
+            const receipt2 = await ethers.provider.getTransactionReceipt(tx2.hash);
+            const lastEpochBlockHeight3 = await bscRelay.getLastEpochBlockSubmitted();
+            expect(lastEpochBlockHeight3).to.equal(400);
+
+        });
+    });
 
 });
 

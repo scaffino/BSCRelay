@@ -1,4 +1,5 @@
 //  npx hardhat run --network localhost ./scripts/deploy.js
+// npx hardhat run --network ropsten ./scripts/deploy.js
 
 const testdata = require("../data/jsonHeaders.json");
 

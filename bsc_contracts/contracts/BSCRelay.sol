@@ -1,7 +1,12 @@
 pragma solidity >=0.7.0 <0.9.0;
 pragma experimental ABIEncoderV2; //returning struct is not fully supported. I need this line to enable it
 
-//import "hardhat/console.sol";
+// TODO
+// - add compensation to the relayer for the block verification
+// - add validation for block with two validator sets
+// - add getter methods for last submitted epoch block (read current state of the relay)
+
+import "hardhat/console.sol";
 import "./RLPReader.sol";
 import "./ECDSA.sol";
 import "./BytesLib.sol";
@@ -27,6 +32,9 @@ contract BSCRelay {
     uint validatorNumber = 21;
     uint constant signatureBytes = 65;
     uint constant thresholdNumberBlocks = 12;
+
+    //events
+    event EpochBlockSubmitted(uint256 indexed blockNumber); //I can filter for indexed variables. Max 3 indexed variables per event
 
     // FullHeader without validator signature
     struct FullHeader {
@@ -138,6 +146,9 @@ contract BSCRelay {
                 require(bytes32(currentBlockHeaderUnsigned[1].toUint()) == blockHash , "Wrong parent, this is not a chain.");
             }
         }
+
+        RLPReader.RLPItem[] memory newEpochBlockNumber = rlpUnsignedHeaders[0].toRlpItem().toList();
+        emit EpochBlockSubmitted(newEpochBlockNumber[9].toUint());
     }
 
     function verifyBlock(bytes[] memory rlpUnsignedHeaders, bytes[] memory rlpSignedHeaders, address[] memory validatorSet) external returns(bool){
@@ -181,6 +192,7 @@ contract BSCRelay {
             for (uint ii = 0; ii < jj; ii++) {
                 require(signer != signers[ii], "Same signer recurring. Not valid blocks.");
             }
+
             signers[jj] = signer;
             // check the 12 blocks are a chain
             if (jj != 0) {
@@ -190,6 +202,8 @@ contract BSCRelay {
         }
         return true;
     }
+
+
 
     //rlpHeader without validator signature
     function decodeRLPHeader(bytes memory rlpHeader) external view returns(FullHeader memory){
@@ -255,6 +269,13 @@ contract BSCRelay {
     function convert(uint256 _a) private returns (uint64) {
         return uint64(_a);
     }
+
+    // ================== GETTER FUNCTIONS ==================
+    function getLastEpochBlockSubmitted() external view returns (uint64) {
+        return currentHeight;
+    }
+
+    // ======================================================
 
 }
 

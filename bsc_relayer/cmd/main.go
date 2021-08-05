@@ -4,7 +4,6 @@ import (
 	"bsc_relayer/pkg/contracts"
 	"bsc_relayer/pkg/utils"
 	"context"
-	//"encoding/json"
 	"fmt"
 	"github.com/binance-chain/bsc-go-client/client"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -20,17 +19,23 @@ import (
 func main() {
 
 	//blockNumber, err := strconv.Atoi(os.Args[1])
-	//var c, _ = client.Dial("wss://127.0.0.1:8545/")
+	//var ropsten, _ = client.Dial("wss://127.0.0.1:8545/")
 
-	var c, _ = client.Dial("wss://eth-ropsten.alchemyapi.io/v2/B9ctAGI1bCboamSzQE58Xu8b0MPFK_C1")
+	var ropsten, _ = client.Dial("wss://eth-ropsten.alchemyapi.io/v2/B9ctAGI1bCboamSzQE58Xu8b0MPFK_C1")
 
-	bscRelay, err := contracts.NewBSCRelay(common.HexToAddress("0x8d7E814304b5BCa6439eb64833C04248b453C09F"), c) //address used for deployment
+	bscRelay, err := contracts.NewBSCRelay(common.HexToAddress("0xaDEA00623b671DB2dAb70db02d36bdDd5cE84CC3"), ropsten) //address used for deployment
 	if err != nil{
 		panic(err)
 	}
 
+	var bsc_chain, _ = client.Dial("wss://bsc-ws-node.nariox.org:443")
+	if err != nil{
+		panic(err)
+	}
+
+	//creation of a channel with bsc_chain
 	sink := make(chan *types.Header)
-	_, err = c.SubscribeNewHead(context.Background(), sink)
+	_, err = bsc_chain.SubscribeNewHead(context.Background(), sink)
 	if err != nil{
 		panic(err)
 	}
@@ -43,26 +48,93 @@ func main() {
 
 	//check current state of the relay contract and submit all the missing epoch blocks up to now
 	lastEBSubmitted, err := bscRelay.GetLastEpochBlockSubmitted(nil)
-	fmt.Printf("last EB submitted %d", lastEBSubmitted)
+	fmt.Println("last EB submitted ", lastEBSubmitted)
 
 	//endless loop for keeping the relay contract up to date
 	for header := range sink {
 		var unsignedHeaderRLP [12][]byte
 		var signedHeaderRLP [12][]byte
+		//var initialValidatorSet [21]common.Address
 		var validatorSet []common.Address
 
-		fmt.Println(header)
-		if (header.Number.Int64() - 11) % 200 == 0 {
+		//catch up with the missing epoch blocks
+		//currentBlock := int64(header.Number.Int64())
+		//fmt.Println("current block -----> ", currentBlock)
+		currentEBNumber := int64(header.Number.Int64()/200)*200
+		//fmt.Println("currentEBNumber -----> ", currentEBNumber)
+
+		//========= print block header json ==========
+		/*var genesisBlock, err = bsc_chain.HeaderByNumber(context.Background(), big.NewInt(0))
+		if err != nil{
+			panic(err)
+		}
+		jsonHeader, err := json.Marshal(genesisBlock)
+		if err != nil{
+			panic(err)
+		}
+		fmt.Println("genesisBlock header -----> ", string(jsonHeader))*/
+
+		if currentEBNumber != int64(lastEBSubmitted) {
+			//loop over the missing epoch blocks
+			for jj := lastEBSubmitted + 200; jj <= uint64(currentEBNumber); jj = jj + 200 {
+				//loop to take epoch block + next 11 blocks
+				for ii := 0; ii < 12; ii++ {
+
+					//get validator set of the previous epoch block
+					if ii == 0 {
+						var previousEBheader, err = bsc_chain.HeaderByNumber(context.Background(), big.NewInt(int64(jj-200)))
+						if err != nil {
+							panic(err)
+						}
+
+						validatorSet = utils.GetValidatorSet(previousEBheader)
+
+						//jsonHeader, err := json.Marshal(previousEBheader)
+						//if err != nil{
+						//	panic(err)
+						//}
+						//fmt.Println(" ")
+						//fmt.Println("jsonHeaders header -----> ", string(jsonHeader))
+					}
+
+					blockHeader, err := bsc_chain.HeaderByNumber(context.Background(), big.NewInt(int64(jj + uint64(ii))))
+
+					unsignedHeaderRLP[ii], err = utils.EncodeHeaderToRLP(blockHeader, big.NewInt(56)) //56 is mainnet
+					if err != nil {
+						panic(err)
+					}
+
+					signedHeaderRLP[ii], err = utils.EncodeHeaderToRLP_noChainId(blockHeader)
+					if err != nil {
+						panic(err)
+					}
+				}
+
+				_, err := bscRelay.SubmitEpochBlock(auth, unsignedHeaderRLP[:], signedHeaderRLP[:], validatorSet) //I use _ because I do not need it afterwards
+				if err != nil{
+					panic(err)
+				}
+
+				//check current state of the relay contract and submit all the missing epoch blocks up to now
+				checkSubmission, _ := bscRelay.GetLastEpochBlockSubmitted(nil)
+				fmt.Println("checkSubmission ", checkSubmission)
+
+			}
+		}
+
+		//===================================================================
+		//submit epoch blocks - livetime -
+		/*if (header.Number.Int64() - 11) % 200 == 0 {
 			for jj := 11; jj >= 0; jj-- {
 				if jj == 11 {
-					var lastEBheader, err = c.HeaderByNumber(context.Background(), big.NewInt(header.Number.Int64() - int64(jj) - 200))
+					var lastEBheader, err = ropsten.HeaderByNumber(context.Background(), big.NewInt(header.Number.Int64() - int64(jj) - 200))
 					if err != nil{
 						panic(err)
 					}
 					validatorSet = utils.GetValidatorSet(lastEBheader)
 				}
 
-				header, err := c.HeaderByNumber(context.Background(), big.NewInt(header.Number.Int64() - int64(jj)))
+				header, err := ropsten.HeaderByNumber(context.Background(), big.NewInt(header.Number.Int64() - int64(jj)))
 
 				unsignedHeaderRLP[11-jj], err = utils.EncodeHeaderToRLP(header, big.NewInt(56)) //56 is mainnet
 				if err != nil{
@@ -76,14 +148,12 @@ func main() {
 			}
 		}
 
-		_, err := bscRelay.SubmitEpochBlock(auth, unsignedHeaderRLP[:], signedHeaderRLP[:], validatorSet) //I use _ because I do not need it afterwards
+		_, err = bscRelay.SubmitEpochBlock(auth, unsignedHeaderRLP[:], signedHeaderRLP[:], validatorSet) //I use _ because I do not need it afterwards
 		if err != nil{
 			panic(err)
-		}
+		}*/
 
 	}
-
-
 }
 
 

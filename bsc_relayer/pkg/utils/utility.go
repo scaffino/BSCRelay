@@ -65,9 +65,8 @@ func EncodeHeaderToRLP_noChainId(header *types.Header) ([]byte, error) {
 func GetValidatorSet(header *types.Header) []common.Address {
 
 	var extradata = header.Extra
-	var validatorSet []common.Address
-
-	var start = 33
+	var validatorSet  = make([]common.Address, 21)
+	var start = 32
 	var length = 20
 
 	for ii := 0; ii < 21; ii++ {

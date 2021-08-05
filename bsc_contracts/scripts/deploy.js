@@ -7,7 +7,7 @@ async function main() {
     const bscRelayContractFactory = await ethers.getContractFactory(
         "BSCRelay"
     );
-    const bscrelay = await bscRelayContractFactory.deploy(testdata.VS_block200, 0);
+    const bscrelay = await bscRelayContractFactory.deploy(testdata.VS_block0, 0);
     console.log("BSCRelay deployed to:", bscrelay.address);
 }
 main()

@@ -20,12 +20,11 @@ import (
 
 func main() {
 
-	//blockNumber, err := strconv.Atoi(os.Args[1])
-	//var ropsten, _ = client.Dial("wss://127.0.0.1:8545/")
+	//for test purposes, can I deploy BSCRelay.sol in ganahce?
 
 	var ropsten, _ = client.Dial("wss://eth-ropsten.alchemyapi.io/v2/B9ctAGI1bCboamSzQE58Xu8b0MPFK_C1")
 
-	bscRelay, err := contracts.NewBSCRelay(common.HexToAddress("0xAa4EA8FCB9c6c90867e5318D0C0F240459D01207"), ropsten) //address used for deployment
+	bscRelay, err := contracts.NewBSCRelay(common.HexToAddress("0x5AA6A8815e7bDE08C253b161F6C3414FF5B2d856"), ropsten) //address used for deployment
 	if err != nil{
 		panic(err)
 	}
@@ -112,8 +111,8 @@ func main() {
 					}
 				}
 				//from time to time I get error --> panic: failed to estimate gas needed: execution reverted: You must submit the next epoch block.
-				//I have to wait (?)
-				time.Sleep(10 * time.Second)
+				//I have to wait for ropsten network to include last EB submission in the chain (?)
+				time.Sleep(12 * time.Second)
 				_, err := bscRelay.SubmitEpochBlock(auth, unsignedHeaderRLP[:], signedHeaderRLP[:], validatorSet) //I use _ because I do not need it afterwards
 				if err != nil{
 					panic(err)

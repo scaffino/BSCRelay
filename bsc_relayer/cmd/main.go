@@ -10,6 +10,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
+	"time"
+
 	//"io/ioutil"
 	"math/big"
 	//"os"
@@ -23,7 +25,7 @@ func main() {
 
 	var ropsten, _ = client.Dial("wss://eth-ropsten.alchemyapi.io/v2/B9ctAGI1bCboamSzQE58Xu8b0MPFK_C1")
 
-	bscRelay, err := contracts.NewBSCRelay(common.HexToAddress("0xaDEA00623b671DB2dAb70db02d36bdDd5cE84CC3"), ropsten) //address used for deployment
+	bscRelay, err := contracts.NewBSCRelay(common.HexToAddress("0xAa4EA8FCB9c6c90867e5318D0C0F240459D01207"), ropsten) //address used for deployment
 	if err != nil{
 		panic(err)
 	}
@@ -109,32 +111,43 @@ func main() {
 						panic(err)
 					}
 				}
-
+				//from time to time I get error --> panic: failed to estimate gas needed: execution reverted: You must submit the next epoch block.
+				//I have to wait (?)
+				time.Sleep(10 * time.Second)
 				_, err := bscRelay.SubmitEpochBlock(auth, unsignedHeaderRLP[:], signedHeaderRLP[:], validatorSet) //I use _ because I do not need it afterwards
 				if err != nil{
 					panic(err)
 				}
+				fmt.Println("Epoch block ", jj, " submitted")
 
-				//check current state of the relay contract and submit all the missing epoch blocks up to now
-				checkSubmission, _ := bscRelay.GetLastEpochBlockSubmitted(nil)
-				fmt.Println("checkSubmission ", checkSubmission)
-
+				if (jj % 10000) == 0 {
+					fmt.Println("checking BSCRelay status...please wait")
+					//wait 20 seconds so that the SC transactions have been processed
+					time.Sleep(20 * time.Second)
+					//check current state of the relay contract and submit all the missing epoch blocks up to now
+					submittedEB, _ := bscRelay.GetLastEpochBlockSubmitted(nil)
+					fmt.Println("Blocks submitted up to block", submittedEB)
+					// update currentEBNumber: in the meantime new blocks have been appended to the BSC chain
+					// If we deploy the contract starting from genesis block,
+					// the relay will never be able to start the live-time
+					currentEBNumber = int64(header.Number.Int64()/200)*200
+				}
 			}
 		}
 
 		//===================================================================
-		//submit epoch blocks - livetime -
+		//submit epoch blocks - live-time -
 		/*if (header.Number.Int64() - 11) % 200 == 0 {
 			for jj := 11; jj >= 0; jj-- {
 				if jj == 11 {
-					var lastEBheader, err = ropsten.HeaderByNumber(context.Background(), big.NewInt(header.Number.Int64() - int64(jj) - 200))
+					var lastEBheader, err = bsc_chain.HeaderByNumber(context.Background(), big.NewInt(header.Number.Int64() - int64(jj) - 200))
 					if err != nil{
 						panic(err)
 					}
 					validatorSet = utils.GetValidatorSet(lastEBheader)
 				}
 
-				header, err := ropsten.HeaderByNumber(context.Background(), big.NewInt(header.Number.Int64() - int64(jj)))
+				header, err := bsc_chain.HeaderByNumber(context.Background(), big.NewInt(header.Number.Int64() - int64(jj)))
 
 				unsignedHeaderRLP[11-jj], err = utils.EncodeHeaderToRLP(header, big.NewInt(56)) //56 is mainnet
 				if err != nil{
@@ -146,13 +159,14 @@ func main() {
 					panic(err)
 				}
 			}
-		}
 
-		_, err = bscRelay.SubmitEpochBlock(auth, unsignedHeaderRLP[:], signedHeaderRLP[:], validatorSet) //I use _ because I do not need it afterwards
-		if err != nil{
-			panic(err)
+			time.Sleep(8 * time.Second)
+			_, err := bscRelay.SubmitEpochBlock(auth, unsignedHeaderRLP[:], signedHeaderRLP[:], validatorSet) //I use _ because I do not need it afterwards
+			if err != nil{
+				panic(err)
+			}
+			fmt.Println("Epoch block ", header.Number.Int64() - 11, " submitted")
 		}*/
-
 	}
 }
 

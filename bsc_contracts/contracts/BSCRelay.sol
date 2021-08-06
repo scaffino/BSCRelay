@@ -4,7 +4,6 @@ pragma experimental ABIEncoderV2; //returning struct is not fully supported. I n
 // TODO
 // - add compensation to the relayer for the block verification
 // - add validation for block with two validator sets
-// - add getter methods for last submitted epoch block (read current state of the relay)
 
 import "hardhat/console.sol";
 import "./RLPReader.sol";
@@ -202,8 +201,6 @@ contract BSCRelay {
         }
         return true;
     }
-
-
 
     //rlpHeader without validator signature
     function decodeRLPHeader(bytes memory rlpHeader) external view returns(FullHeader memory){
